@@ -16,7 +16,7 @@ Offline chess for two players inspired by lichess
 
 A programm to play chess against friends on one device made with C# / WPF. Planning to continue this project and introduce online feature as well as performance improvments and all chess rules (en passent and castling).
 
-[Download](https://github.com/SagMeinenNamen/eChess/releases/download/Release/eChess.exe)
+[Download](https://github.com/SagMeinenNamen/eChess/releases/download/v1.0/eChess.exe)
 
 <hr>
 
@@ -36,9 +36,9 @@ A programm to play chess against friends on one device made with C# / WPF. Plann
 - [x] End screen when a game finishes
 - [x] Exit and new game options in end screen
 - [x] Moving and capturing sounds
+- [ ] Highlight last move of opponent yellow
 - [ ] Add "En passant" rule
 - [ ] Add castling rule
 - [ ] Add promotion of pawns when they reach last row
-- [ ] Highlight last move of opponent yellow
 - [ ] Customize colors
 - [ ] Online games
