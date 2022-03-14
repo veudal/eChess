@@ -1,0 +1,446 @@
+﻿<Window x:Class="eChess.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
+        xmlns:local="clr-namespace:eChess"
+        mc:Ignorable="d"
+        x:Uid="MainWindow" Title="eChess" Height="1024" Width="1024" Background="DarkSlateGray" WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <SolidColorBrush x:Key="SelectedBrush" Color="#FF00BFFF" Opacity="0.4"/>
+        <SolidColorBrush x:Key="DefaultBrush" Color="Transparent"/>
+        <BeginStoryboard x:Key="EndScreenAnimation">
+            <Storyboard>
+                <DoubleAnimation Storyboard.TargetName="EndScreenGrid" 
+                       Storyboard.TargetProperty="Width" From="0" To="{Binding ElementName=ParentGrid, Path=ActualWidth}" 
+                       Duration="0:0:1.5" BeginTime="0:0:0"/>
+                <DoubleAnimation Storyboard.TargetName="WinnerText" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:3" BeginTime="0:0:0"/>
+                <DoubleAnimation Storyboard.TargetName="ReasonText" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:3" BeginTime="0:0:0"/>
+                
+                <DoubleAnimation Storyboard.TargetName="ExitBtn" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:2" BeginTime="0:0:3.5"/>
+                <DoubleAnimation Storyboard.TargetName="NewGameBtn" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:2" BeginTime="0:0:3.5"/>
+            </Storyboard>
+        </BeginStoryboard>
+        
+        <Style x:Key="ButtonRoundedCorner" TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource DefaultBrush}"/>
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border CornerRadius="50" Margin="2" Background="{TemplateBinding Background}" BorderThickness="2">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center">
+                            </ContentPresenter>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="RoundedCorners" TargetType="Button">
+            <Setter Property="Background" Value="DeepSkyBlue"/>
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border CornerRadius="10" Background="{TemplateBinding Background}" BorderThickness="2">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center">
+                            </ContentPresenter>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="EmptyField" TargetType="Button">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border CornerRadius="50" Background="{TemplateBinding Background}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <Ellipse Grid.Row="3" Grid.Column="3" Grid.RowSpan="2" Grid.ColumnSpan="2" Fill="DeepSkyBlue">
+                                </Ellipse>
+                            </Grid>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="OccupiedField" TargetType="Button">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border CornerRadius="50" Background="{TemplateBinding Background}" BorderThickness="0">
+                            <Grid>
+                                <Rectangle Opacity="0.6">
+                                    <Rectangle.Fill>
+                                        <DrawingBrush>
+                                            <DrawingBrush.Drawing>
+                                                <GeometryDrawing Brush="DeepSkyBlue">
+                                                    <GeometryDrawing.Geometry>
+                                                        <GeometryGroup>
+                                                            <RectangleGeometry Rect="0,0,200,200"/>
+                                                            <EllipseGeometry  RadiusX="100" RadiusY="100"  Center="100,100" />
+                                                        </GeometryGroup>
+                                                    </GeometryDrawing.Geometry>
+                                                </GeometryDrawing>
+                                            </DrawingBrush.Drawing>
+                                        </DrawingBrush>
+                                    </Rectangle.Fill>
+                                </Rectangle>
+                            </Grid>
+                        </Border>
+                    </ControlTemplate>
+
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="WhiteColor" TargetType="Rectangle">
+            <Setter Property="Fill" Value="Azure"/>
+        </Style>
+        <Style x:Key="BlackColor" TargetType="Rectangle">
+            <Setter Property="Fill" Value="DarkSlateBlue"/>
+        </Style>
+    </Window.Resources>
+    <Grid x:Name="ParentGrid">
+        <Grid Panel.ZIndex="5" x:Name="EndScreenGrid"  Width="0" Grid.ColumnSpan="8" Grid.RowSpan="8" Visibility="Collapsed">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Rectangle x:Name="BackgroundRectangle" Grid.ColumnSpan="8" Grid.RowSpan="3" Grid.Row="2" Fill="White"/>
+            <TextBlock x:Name="WinnerText" Foreground="DarkSlateBlue" Grid.RowSpan="1" Grid.ColumnSpan="8" Grid.Row="3" FontSize="70" FontStyle="Italic" FontWeight="Normal" TextAlignment="Center"/>
+            <TextBlock x:Name="ReasonText" Foreground="Black" Grid.ColumnSpan="8" Grid.RowSpan="1" Grid.Row="4" FontSize="25" FontStyle="Normal" FontWeight="Light" TextAlignment="Center"/>
+            <Button x:Name="ExitBtn" Opacity="0" Grid.Column="0" Grid.Row="4" Style="{StaticResource RoundedCorners}" Content="Exit" FontSize="30" FontWeight="Bold" Grid.ColumnSpan="2" Margin="30,5" Background="DeepSkyBlue" Click="ExitBtn_Click"/>
+            <Button x:Name="NewGameBtn" Opacity="0" Grid.Column="6" Grid.Row="4" Style="{StaticResource RoundedCorners}" Content="New game" FontSize="30" FontWeight="Bold" Grid.ColumnSpan="2" Margin="30,5" Background="DeepSkyBlue" Click="NewGameBtn_Click"/>
+        </Grid>
+        
+        <Grid x:Name="Grid" Width="{Binding RelativeSource={RelativeSource Self}, Path=ActualHeight}" RenderTransformOrigin="0.5,0.5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <Grid x:Name="Board" Grid.ColumnSpan="8" Grid.RowSpan="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="0" Grid.Row="0"/>
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="2" Grid.Row="0"/>
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="4" Grid.Row="0"/>
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="6" Grid.Row="0"/>
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="1" Grid.Row="1"/>
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="3" Grid.Row="1"/>
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="5" Grid.Row="1"/>
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="7" Grid.Row="1"/>
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="0" Grid.Row="2"/>
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="2" Grid.Row="2"/>
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="4" Grid.Row="2"/>
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="6" Grid.Row="2"/>
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="1" Grid.Row="3"/>
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="3" Grid.Row="3"/>
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="5" Grid.Row="3"/>
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="7" Grid.Row="3"/>
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="0" Grid.Row="4"/>
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="2" Grid.Row="4"/>
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="4" Grid.Row="4"/>
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="6" Grid.Row="4"/>
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="1" Grid.Row="5"/>
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="3" Grid.Row="5"/>
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="5" Grid.Row="5"/>
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="7" Grid.Row="5"/>
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="0" Grid.Row="6"/>
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="2" Grid.Row="6"/>
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="4" Grid.Row="6"/>
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="6" Grid.Row="6"/>
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="1" Grid.Row="7"/>
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="3" Grid.Row="7"/>
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="5" Grid.Row="7"/>
+                <Rectangle Style="{StaticResource WhiteColor}" Grid.Column="7" Grid.Row="7"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="1" Grid.Row="0"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="3" Grid.Row="0"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="5" Grid.Row="0"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="7" Grid.Row="0"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="0" Grid.Row="1"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="2" Grid.Row="1"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="4" Grid.Row="1"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="6" Grid.Row="1"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="1" Grid.Row="2"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="3" Grid.Row="2"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="5" Grid.Row="2"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="7" Grid.Row="2"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="0" Grid.Row="3"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="2" Grid.Row="3"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="4" Grid.Row="3"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="6" Grid.Row="3"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="1" Grid.Row="4"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="3" Grid.Row="4"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="5" Grid.Row="4"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="7" Grid.Row="4"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="0" Grid.Row="5"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="2" Grid.Row="5"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="4" Grid.Row="5"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="6" Grid.Row="5"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="1" Grid.Row="6"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="3" Grid.Row="6"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="5" Grid.Row="6"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="7" Grid.Row="6"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="0" Grid.Row="7"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="2" Grid.Row="7"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="4" Grid.Row="7"/>
+                <Rectangle Style="{StaticResource BlackColor}" Grid.Column="6" Grid.Row="7"/>
+
+            </Grid>
+            <Button x:Name="BB1" Grid.Column="5" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/BB.png" RenderTransformOrigin="0.5,0.5">
+                </Image>
+            </Button>
+            <Button x:Name="BB2" Grid.Column="2" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/BB.png" RenderTransformOrigin="0.5,0.5">
+                </Image>
+            </Button>
+            <Button x:Name="BK"  Grid.Column="4" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/BK.png"  RenderTransformOrigin="0.5,0.5">
+                </Image>
+            </Button>
+            <Button x:Name="BN1" Grid.Column="6" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/BN.png"  RenderTransformOrigin="0.5,0.5">
+                </Image>
+            </Button>
+            <Button x:Name="BN2" Grid.Column="1" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/BN.png"  RenderTransformOrigin="0.5,0.5">
+                </Image>
+            </Button>
+            <Button x:Name="BQ" Grid.Column="3" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/BQ.png" RenderTransformOrigin="0.5,0.5">
+                </Image>
+            </Button>
+            <Button x:Name="BR1" Grid.Column="0" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/BR.png" RenderTransformOrigin="0.5,0.5">
+                </Image>
+            </Button>
+            <Button x:Name="BR2" Grid.Column="7" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/BR.png" RenderTransformOrigin="0.5,0.5">
+                </Image>
+            </Button>
+            <Button x:Name="BP1" Grid.Column="0" Grid.Row="1" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/BP.png" RenderTransformOrigin="0.5,0.5">
+                </Image>
+            </Button>
+            <Button x:Name="BP2" Grid.Column="1" Grid.Row="1" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/BP.png" RenderTransformOrigin="0.5,0.5">
+                </Image>
+            </Button>
+            <Button x:Name="BP3" Grid.Column="2" Grid.Row="1" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/BP.png" RenderTransformOrigin="0.5,0.5">
+                </Image>
+            </Button>
+            <Button x:Name="BP4" Grid.Column="3" Grid.Row="1" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/BP.png" RenderTransformOrigin="0.5,0.5">
+                </Image>
+            </Button>
+            <Button x:Name="BP5" Grid.Column="4" Grid.Row="1" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/BP.png" RenderTransformOrigin="0.5,0.5">
+                </Image>
+            </Button>
+            <Button x:Name="BP6" Grid.Column="5" Grid.Row="1" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/BP.png" RenderTransformOrigin="0.5,0.5">
+                </Image>
+            </Button>
+            <Button x:Name="BP7" Grid.Column="6" Grid.Row="1" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/BP.png" RenderTransformOrigin="0.5,0.5">
+                </Image>
+            </Button>
+            <Button x:Name="BP8" Grid.Column="7" Grid.Row="1" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/BP.png" RenderTransformOrigin="0.5,0.5">
+                </Image>
+            </Button>
+
+            <Button x:Name="WB1" Grid.Column="2" Grid.Row="7" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/WB.png"/>
+            </Button>
+            <Button x:Name="WB2" Grid.Column="5" Grid.Row="7" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/WB.png"/>
+            </Button>
+            <Button x:Name="WK" Grid.Column="4" Grid.Row="7" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/WK.png"/>
+            </Button>
+            <Button x:Name="WN1" Grid.Column="1" Grid.Row="7" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/WN.png"/>
+            </Button>
+            <Button x:Name="WN2" Grid.Column="6" Grid.Row="7" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/WN.png"/>
+            </Button>
+            <Button x:Name="WQ" Grid.Column="3"  Grid.Row="7" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/WQ.png"/>
+            </Button>
+            <Button x:Name="WR1" Grid.Column="0"  Grid.Row="7" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/WR.png"/>
+            </Button>
+            <Button x:Name="WR2" Grid.Column="7"  Grid.Row="7" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/WR.png"/>
+            </Button>
+            <Button x:Name="WP1" Grid.Column="0" Grid.Row="6" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/WP.png"/>
+            </Button>
+            <Button x:Name="WP2" Grid.Column="1" Grid.Row="6" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/WP.png"/>
+            </Button>
+            <Button x:Name="WP3" Grid.Column="2" Grid.Row="6" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/WP.png"/>
+            </Button>
+            <Button x:Name="WP4" Grid.Column="3" Grid.Row="6" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/WP.png"/>
+            </Button>
+            <Button x:Name="WP5" Grid.Column="4" Grid.Row="6" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/WP.png"/>
+            </Button>
+            <Button x:Name="WP6" Grid.Column="5" Grid.Row="6" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/WP.png"/>
+            </Button>
+            <Button x:Name="WP7" Grid.Column="6" Grid.Row="6" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/WP.png"/>
+            </Button>
+            <Button x:Name="WP8" Grid.Column="7" Grid.Row="6" Style="{StaticResource ButtonRoundedCorner}" Click="Piece_Click">
+                <Image Source="Resources/WP.png"/>
+            </Button>
+
+
+
+            <Button x:Name="Field1_1" Panel.ZIndex="2" Background="Transparent" Grid.Column="0" Grid.Row="0" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field2_1" Panel.ZIndex="2" Background="Transparent" Grid.Column="1" Grid.Row="0" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field3_1" Panel.ZIndex="2" Background="Transparent" Grid.Column="2" Grid.Row="0" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field4_1" Panel.ZIndex="2" Background="Transparent" Grid.Column="3" Grid.Row="0" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field5_1" Panel.ZIndex="2" Background="Transparent" Grid.Column="4" Grid.Row="0" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field6_1" Panel.ZIndex="2" Background="Transparent" Grid.Column="5" Grid.Row="0" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field7_1" Panel.ZIndex="2" Background="Transparent" Grid.Column="6" Grid.Row="0" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field8_1" Panel.ZIndex="2" Background="Transparent" Grid.Column="7" Grid.Row="0" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field1_2" Panel.ZIndex="2" Background="Transparent" Grid.Column="0" Grid.Row="1" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field2_2" Panel.ZIndex="2" Background="Transparent" Grid.Column="1" Grid.Row="1" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field3_2" Panel.ZIndex="2" Background="Transparent" Grid.Column="2" Grid.Row="1" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field4_2" Panel.ZIndex="2" Background="Transparent" Grid.Column="3" Grid.Row="1" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field5_2" Panel.ZIndex="2" Background="Transparent" Grid.Column="4" Grid.Row="1" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field6_2" Panel.ZIndex="2" Background="Transparent" Grid.Column="5" Grid.Row="1" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field7_2" Panel.ZIndex="2" Background="Transparent" Grid.Column="6" Grid.Row="1" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field8_2" Panel.ZIndex="2" Background="Transparent" Grid.Column="7" Grid.Row="1" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field1_3" Panel.ZIndex="2" Background="Transparent" Grid.Column="0" Grid.Row="2" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field2_3" Panel.ZIndex="2" Background="Transparent" Grid.Column="1" Grid.Row="2" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field3_3" Panel.ZIndex="2" Background="Transparent" Grid.Column="2" Grid.Row="2" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field4_3" Panel.ZIndex="2" Background="Transparent" Grid.Column="3" Grid.Row="2" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field5_3" Panel.ZIndex="2" Background="Transparent" Grid.Column="4" Grid.Row="2" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field6_3" Panel.ZIndex="2" Background="Transparent" Grid.Column="5" Grid.Row="2" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field7_3" Panel.ZIndex="2" Background="Transparent" Grid.Column="6" Grid.Row="2" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field8_3" Panel.ZIndex="2" Background="Transparent" Grid.Column="7" Grid.Row="2" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field1_4" Panel.ZIndex="2" Background="Transparent" Grid.Column="0" Grid.Row="3" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field2_4" Panel.ZIndex="2" Background="Transparent" Grid.Column="1" Grid.Row="3" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field3_4" Panel.ZIndex="2" Background="Transparent" Grid.Column="2" Grid.Row="3" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field4_4" Panel.ZIndex="2" Background="Transparent" Grid.Column="3" Grid.Row="3" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field5_4" Panel.ZIndex="2" Background="Transparent" Grid.Column="4" Grid.Row="3" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field6_4" Panel.ZIndex="2" Background="Transparent" Grid.Column="5" Grid.Row="3" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field7_4" Panel.ZIndex="2" Background="Transparent" Grid.Column="6" Grid.Row="3" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field8_4" Panel.ZIndex="2" Background="Transparent" Grid.Column="7" Grid.Row="3" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field1_5" Panel.ZIndex="2" Background="Transparent" Grid.Column="0" Grid.Row="4" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field2_5" Panel.ZIndex="2" Background="Transparent" Grid.Column="1" Grid.Row="4" Style="{StaticResource OccupiedField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field3_5" Panel.ZIndex="2" Background="Transparent" Grid.Column="2" Grid.Row="4" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field4_5" Panel.ZIndex="2" Background="Transparent" Grid.Column="3" Grid.Row="4" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field5_5" Panel.ZIndex="2" Background="Transparent" Grid.Column="4" Grid.Row="4" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field6_5" Panel.ZIndex="2" Background="Transparent" Grid.Column="5" Grid.Row="4" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field7_5" Panel.ZIndex="2" Background="Transparent" Grid.Column="6" Grid.Row="4" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field8_5" Panel.ZIndex="2" Background="Transparent" Grid.Column="7" Grid.Row="4" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field1_6" Panel.ZIndex="2" Background="Transparent" Grid.Column="0" Grid.Row="5" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field2_6" Panel.ZIndex="2" Background="Transparent" Grid.Column="1" Grid.Row="5" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field3_6" Panel.ZIndex="2" Background="Transparent" Grid.Column="2" Grid.Row="5" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field4_6" Panel.ZIndex="2" Background="Transparent" Grid.Column="3" Grid.Row="5" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field5_6" Panel.ZIndex="2" Background="Transparent" Grid.Column="4" Grid.Row="5" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field6_6" Panel.ZIndex="2" Background="Transparent" Grid.Column="5" Grid.Row="5" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field7_6" Panel.ZIndex="2" Background="Transparent" Grid.Column="6" Grid.Row="5" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field8_6" Panel.ZIndex="2" Background="Transparent" Grid.Column="7" Grid.Row="5" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field1_7" Panel.ZIndex="2" Background="Transparent" Grid.Column="0" Grid.Row="6" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field2_7" Panel.ZIndex="2" Background="Transparent" Grid.Column="1" Grid.Row="6" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field3_7" Panel.ZIndex="2" Background="Transparent" Grid.Column="2" Grid.Row="6" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field4_7" Panel.ZIndex="2" Background="Transparent" Grid.Column="3" Grid.Row="6" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field5_7" Panel.ZIndex="2" Background="Transparent" Grid.Column="4" Grid.Row="6" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field6_7" Panel.ZIndex="2" Background="Transparent" Grid.Column="5" Grid.Row="6" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field7_7" Panel.ZIndex="2" Background="Transparent" Grid.Column="6" Grid.Row="6" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field8_7" Panel.ZIndex="2" Background="Transparent" Grid.Column="7" Grid.Row="6" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field1_8" Panel.ZIndex="2" Background="Transparent" Grid.Column="0" Grid.Row="7" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field2_8" Panel.ZIndex="2" Background="Transparent" Grid.Column="1" Grid.Row="7" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field3_8" Panel.ZIndex="2" Background="Transparent" Grid.Column="2" Grid.Row="7" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field4_8" Panel.ZIndex="2" Background="Transparent" Grid.Column="3" Grid.Row="7" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field5_8" Panel.ZIndex="2" Background="Transparent" Grid.Column="4" Grid.Row="7" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field6_8" Panel.ZIndex="2" Background="Transparent" Grid.Column="5" Grid.Row="7" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field7_8" Panel.ZIndex="2" Background="Transparent" Grid.Column="6" Grid.Row="7" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+            <Button x:Name="Field8_8" Panel.ZIndex="2" Background="Transparent" Grid.Column="7" Grid.Row="7" Style="{StaticResource EmptyField}" Click="Field_Click" Visibility="Collapsed"/>
+        </Grid>
+    </Grid>
+</Window>
