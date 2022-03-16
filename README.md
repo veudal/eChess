@@ -36,9 +36,10 @@ A programm for windows to play chess against friends on one device made with C# 
 - [x] End screen when a game finishes
 - [x] Exit and new game options in end screen
 - [x] Moving and capturing sounds
-- [ ] Highlight last move of opponent yellow
+- [ ] Highlight last move of opponent
 - [ ] Add "En passant" rule
 - [ ] Add castling rule
 - [ ] Add promotion of pawns when they reach last row
-- [ ] Customize colors
+- [ ] Customize colors and sounds
 - [ ] Online games
+- [ ] Settings page
