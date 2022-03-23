@@ -10,13 +10,15 @@ namespace eChess
 {
     internal class Moves
     {
-        bool wT;
-        bool prev;
+        bool whitesTurn;
+        bool preview;
+        bool currentlyInCheck;
 
-        public List<Point> GetValidMoves(Piece piece, Point pos, Field[,] board, bool whitesTurn, bool preview)
+        public List<Point> GetValidMoves(Piece piece, Point pos, Field[,] board, bool whitesTurn, bool preview, bool currentlyInCheck)
         {
-            wT = whitesTurn;
-            prev = preview;
+            this.whitesTurn = whitesTurn;
+            this.preview = preview;
+            this.currentlyInCheck = currentlyInCheck;
             List<Point> validMoves = new List<Point>();
             GetMovesForSelectedPiece(piece, pos, board, validMoves);
             return validMoves;
@@ -28,7 +30,7 @@ namespace eChess
             int pawnY = 1;
             string color = "White";
 
-            if (wT == false)
+            if (whitesTurn == false)
             {
                 pieces = new List<Piece> { Piece.BlackBishop, Piece.BlackKnight, Piece.BlackPawn, Piece.BlackQueen, Piece.BlackRook, Piece.BlackKing };
                 pawnY = -1;
@@ -153,14 +155,14 @@ namespace eChess
 
         private bool LegalMove(Point move, Field[,] board, Point pos)
         {
-            if (prev)
+            if (preview)
             {
                 return true;
             }
             Field[,] previewBoard = board.Clone<Field[,]>();
             previewBoard[move.X, move.Y].Piece = previewBoard[pos.X, pos.Y].Piece;
             previewBoard[pos.X, pos.Y].Piece = Piece.Empty;
-            if (Check.IsCheck(previewBoard, !wT) == false)
+            if (Check.IsCheck(previewBoard, !whitesTurn, currentlyInCheck) == false)
             {
                 return true;
             }
@@ -256,6 +258,35 @@ namespace eChess
             {
                 IsValidMove(board, validMoves, pieces, move, pos);
             }
+
+            ShortCastle(pos, board, validMoves);
+            LongCastle(pos, board, validMoves);
+        }
+
+        private void ShortCastle(Point pos, Field[,] board, List<Point> validMoves)
+        {
+            //Check if there is check, king and the rook moved yet and if there are pieces between them
+            if (currentlyInCheck == false && board[pos.X, pos.Y].FieldActivated == false && board[pos.X + 3, pos.Y].FieldActivated == false && board[pos.X + 1, pos.Y].Piece == Piece.Empty && board[pos.X + 2, pos.Y].Piece == Piece.Empty)
+            {
+                //Check if king would need to go through check or is in check after castling
+                if (LegalMove(new Point(pos.X + 1, pos.Y), board, pos) && LegalMove(new Point(pos.X + 2, pos.Y), board, pos))
+                {
+                    validMoves.Add(new Point(pos.X + 2, pos.Y));
+                }
+            }
+        }
+
+        private void LongCastle(Point pos, Field[,] board, List<Point> validMoves)
+        {
+            //Check if there is check, king and the rook moved yet and if there are pieces between them
+            if (currentlyInCheck == false && board[pos.X, pos.Y].FieldActivated == false && board[pos.X - 4, pos.Y].FieldActivated == false && board[pos.X - 1, pos.Y].Piece == Piece.Empty && board[pos.X - 2, pos.Y].Piece == Piece.Empty && board[pos.X - 3, pos.Y].Piece == Piece.Empty)
+            {
+                //Check if king would need to go through check or is in check after castling
+                if (LegalMove(new Point(pos.X - 1, pos.Y), board, pos) && LegalMove(new Point(pos.X - 2, pos.Y), board, pos))
+                {
+                    validMoves.Add(new Point(pos.X - 2, pos.Y));
+                }
+            }
         }
 
         private void Knight(Point pos, Field[,] board, List<Point> validMoves, List<Piece> pieces)
@@ -293,8 +324,6 @@ namespace eChess
             {
                 IsValidMove(board, validMoves, pieces, move, pos);
             }
-
-
         }
 
         private void IsValidMove(Field[,] board, List<Point> validMoves, List<Piece> pieces, Point move, Point pos)
@@ -341,7 +370,12 @@ namespace eChess
             move = new Point(pos.X + 1 * y, pos.Y - 1 * y);
             if (InsideBoard(move) && LegalMove(move, board, pos) && !pieces.Contains(board[move.X, move.Y].Piece))
             {
-                validMoves.Add(new Point(pos.X + 1 * y, pos.Y - 1 * y));
+                validMoves.Add(move);
+            }
+            //En passent right top (from whites perspective)
+            else if (InsideBoard(move) && LegalMove(move, board, pos) && board[move.X, move.Y + y * 1].DoubleMoved == true)
+            {
+                validMoves.Add(move);
             }
 
             //Capture left top piece (from whites perspective)
@@ -350,6 +384,12 @@ namespace eChess
             {
                 validMoves.Add(move);
             }
+            //En passent left top (from whites perspective)
+            else if (InsideBoard(move) && LegalMove(move, board, pos) && board[move.X, move.Y + y * 1].DoubleMoved == true)
+            {
+                validMoves.Add(move);
+            }
         }
     }
 }
+

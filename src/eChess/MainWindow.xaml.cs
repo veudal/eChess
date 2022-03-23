@@ -16,28 +16,91 @@ using Brush = System.Windows.Media.Brush;
 using System.Windows.Media.Effects;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Windows.Shapes;
+using Image = System.Windows.Controls.Image;
+using System.Windows.Media.Imaging;
+using eChessServer.Entities;
+using Newtonsoft.Json;
+using System.Linq;
 
 namespace eChess
 {
     public partial class MainWindow : Window
     {
-        Point pos = new Point(0, 0);
-        Button slctdBtn;
-        bool whitesTurn = true;
+        readonly string path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "\\eChess\\";
         readonly Field[,] board = new Field[8, 8];
         readonly BackgroundWorker GameEndChecker = new BackgroundWorker();
-        Button lastSelectedPiece = null;
-        bool currentlyInCheck;
         readonly Moves moves = new Moves();
+        Point currentPos = new Point(0, 0);
+        Point newPos = new Point(0, 0);
+        readonly List<Point> markedFields = new List<Point>();
+        readonly List<string> promotedPieces = new List<string>();
+        Button lastSelectedPiece = new Button();
+        Button slctdBtn;
+        bool currentlyInCheck;
+        bool doubleMoveForEnPassent;
+        bool whitesTurn = true;
+        bool onlineGame;
+        bool waitingForOpponent;
+        string playerName = string.Empty;
+        Guid playerGuid = Guid.NewGuid();
+        GameEntity game = new GameEntity();
+        BackgroundWorker backgroundMatchFinder = new BackgroundWorker();
+        BackgroundWorker sendMove = new BackgroundWorker();
+        BackgroundWorker receiveMove = new BackgroundWorker();
+        MoveEntity opponentsMove = new MoveEntity();
 
         public MainWindow()
         {
             InitializeComponent();
-            PrepareBoard();
+            SetupChessBoard();
+            Username();
             GameEndChecker.DoWork += CheckForGameEnd;
+
         }
 
-        private void PrepareBoard()
+        private void BackgroundMatchFinder_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            StartOnlineGame.IsEnabled = true;
+            if (game != null)
+            {
+                if (game.GameID != Guid.Empty)
+                {
+                    PrepareOnlineGame();
+                }
+            }
+        }
+
+        private void PrepareOnlineGame()
+        {
+            StartOnlineGame.Background = Brushes.DeepSkyBlue;
+            StartOnlineGame.Content = "Online game";
+            ProgressRing.Visibility = Visibility.Collapsed;
+            Menu.Visibility = Visibility.Collapsed;
+            if (game.White == false)
+            {
+                RotateBoardAndPieces();
+                ReceiveMove();
+            }
+        }
+
+        private void BackgroundMatchFinder_DoWork(object sender, DoWorkEventArgs e)
+        {
+            MatchFinder matchFinder = new MatchFinder();
+            game = matchFinder.FindMatch(playerGuid, playerName, backgroundMatchFinder).Result;
+        }
+
+        private void Username()
+        {
+            Directory.CreateDirectory(path);
+            if (File.Exists(path + "username"))
+            {
+                string name = File.ReadAllText(path + "username");
+                NameTextBox.Text = name;
+            }
+        }
+
+        private void SetupChessBoard()
         {
             //To initialize and make actual first call faster
             board.Clone<Field[,]>();
@@ -46,67 +109,238 @@ namespace eChess
             {
                 for (int column = 0; column < 8; column++)
                 {
-                    Piece p = Piece.Empty;
-                    p = SetPieceOnField(column, row, p);
+                    Piece p = SetPieceOnField(column, row);
                     board[column, row] = new Field { Point = new Point(column, row), Piece = p };
                 }
             }
         }
 
-        private static Piece SetPieceOnField(int column, int row, Piece p)
+
+        private void ShowAvaibleMoves(Piece piece)
+        {
+            List<Point> validMoves = moves.GetValidMoves(piece, currentPos, board, whitesTurn, false, currentlyInCheck);
+
+            foreach (var move in validMoves)
+            {
+                Button button = (Button)Grid.FindName("Field" + (move.X + 1) + "_" + (move.Y + 1));
+                if (board[move.X, move.Y].Piece != Piece.Empty)
+                {
+                    button.Style = this.FindResource("OccupiedField") as Style;
+                }
+
+                button.Visibility = Visibility.Visible;
+            }
+            slctdBtn.Background = this.FindResource("SelectedBrush") as Brush;
+        }
+
+        private void Field_Click(object sender, RoutedEventArgs e)
+        {
+            Button clickedBtn = (Button)sender;
+            newPos = new Point(Grid.GetColumn(clickedBtn), Grid.GetRow(clickedBtn));
+            MakeMove();
+            PostMove();
+            PlaySound();
+            if (onlineGame == true)
+            {
+                ReceiveMove();
+            }
+            whitesTurn = !whitesTurn;
+            GameEndChecker.RunWorkerAsync();
+        }
+
+        private void ReceiveMove()
+        {
+            waitingForOpponent = true;
+            receiveMove = new BackgroundWorker();
+            receiveMove.DoWork += ReceiveMove_DoWork;
+            receiveMove.RunWorkerAsync();
+            receiveMove.RunWorkerCompleted += ReceiveMove_RunWorkerCompleted;
+        }
+
+        private void ReceiveMove_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            waitingForOpponent = false;
+            newPos = opponentsMove.newPos;
+            currentPos = opponentsMove.currentPos;
+            slctdBtn = GetButton();
+            MakeMove();
+            PlaySound();
+            whitesTurn = !whitesTurn;
+            GameEndChecker.RunWorkerAsync();
+        }
+
+        private Button GetButton()
+        {
+            List<Button> buttons;
+            if (game.White == true)
+            {
+                buttons = new List<Button> { BB1, BB2, BK, BN1, BN2, BP1, BP2, BP3, BP4, BP5, BP6, BP7, BP8, BQ, BR1, BR2 };
+            }
+            else
+            {
+                buttons = new List<Button> { WB1, WB2, WK, WN1, WN2, WP1, WP2, WP3, WP4, WP5, WP6, WP7, WP8, WQ, WR1, WR2 };
+            }
+            foreach (var button in buttons)
+            {
+                int column = Grid.GetColumn(button);
+                int row = Grid.GetRow(button);
+                if (column == currentPos.X && row == currentPos.Y && button.Visibility == Visibility.Visible)
+                {
+                    return button;
+                }
+            }
+            return new Button();
+        }
+
+        private void ReceiveMove_DoWork(object sender, DoWorkEventArgs e)
+        {
+            opponentsMove = GameController.ReceiveMove(game.GameID, playerGuid, receiveMove).Result;
+        }
+
+        private void PostMove()
+        {
+            sendMove = new BackgroundWorker();
+            sendMove.DoWork += SendMove_DoWork;
+            sendMove.RunWorkerAsync();
+        }
+
+        private void SendMove_DoWork(object sender, DoWorkEventArgs e)
+        {
+            GameController.PostMove(game.GameID, playerGuid, currentPos, newPos);
+        }
+
+        private void MakeMove()
+        {
+            HighlightFields();
+            RemovePiece();
+            SpecialRules();
+            MovePiece();
+            ResetHints();
+            if (onlineGame == false)
+            {
+                RotateBoardAndPieces();
+            }
+        }
+
+        private void SpecialRules()
+        {
+            Promoting();
+            EnPassent();
+            Castling();
+        }
+
+        private void Castling()
+        {
+            if (whitesTurn)
+            {
+                if (slctdBtn.Name == "WK")
+                {
+                    //Castle short
+                    if (currentPos.X < newPos.X && newPos.X - currentPos.X == 2)
+                    {
+                        Grid.SetColumn(WR2, 5);
+                        board[newPos.X - 1, newPos.Y].Piece = Piece.WhiteRook;
+                        board[newPos.X + 1, newPos.Y].Piece = Piece.Empty;
+                    }
+                    //Castle long
+                    else if (currentPos.X > newPos.X && currentPos.X - newPos.X == 2)
+                    {
+                        Grid.SetColumn(WR1, 3);
+                        board[newPos.X + 1, newPos.Y].Piece = Piece.WhiteRook;
+                        board[newPos.X - 2, newPos.Y].Piece = Piece.Empty;
+                    }
+                }
+            }
+            else
+            {
+                if (slctdBtn.Name == "BK")
+                {
+                    //Castle short
+                    if (currentPos.X < newPos.X && newPos.X - currentPos.X == 2)
+                    {
+                        Grid.SetColumn(BR2, 5);
+                        board[newPos.X - 1, newPos.Y].Piece = Piece.BlackRook;
+                        board[newPos.X + 1, newPos.Y].Piece = Piece.Empty;
+                    }
+                    //Castle long
+                    else if (currentPos.X > newPos.X && currentPos.X - newPos.X == 2)
+                    {
+                        Grid.SetColumn(BR1, 3);
+                        board[newPos.X + 1, newPos.Y].Piece = Piece.BlackRook;
+                        board[newPos.X - 2, newPos.Y].Piece = Piece.Empty;
+                    }
+                }
+            }
+        }
+
+        private void Promoting()
+        {
+            if (slctdBtn.Name.Contains("WP") && newPos.Y == 0)
+            {
+                Image image = (Image)this.FindName(slctdBtn.Name + "Image");
+                image.Source = new BitmapImage(new Uri("pack://application:,,,/Resources/WQ.png"));
+                board[newPos.X, newPos.Y].Piece = Piece.WhiteQueen;
+                promotedPieces.Add(slctdBtn.Name);
+
+            }
+            else if (slctdBtn.Name.Contains("BP") && newPos.Y == 7)
+            {
+                Image image = (Image)this.FindName(slctdBtn.Name + "Image");
+                image.Source = new BitmapImage(new Uri("pack://application:,,,/Resources/BQ.png"));
+                board[newPos.X, newPos.Y].Piece = Piece.BlackQueen;
+                promotedPieces.Add(slctdBtn.Name);
+            }
+        }
+
+        private void MovePiece()
+        {
+            Grid.SetColumn(slctdBtn, newPos.X);
+            Grid.SetRow(slctdBtn, newPos.Y);
+            board[newPos.X, newPos.Y].FieldActivated = true;
+            board[newPos.X, newPos.Y].Piece = board[currentPos.X, currentPos.Y].Piece;
+            board[currentPos.X, currentPos.Y].Piece = Piece.Empty;
+        }
+
+        private static Piece SetPieceOnField(int column, int row)
         {
             if ((column == 0 || column == 7) && row == 0)
-            {
-                p = Piece.BlackRook;
-            }
+                return Piece.BlackRook;
+
             if ((column == 1 || column == 6) && row == 0)
-            {
-                p = Piece.BlackKnight;
-            }
+                return Piece.BlackKnight;
+
             if ((column == 2 || column == 5) && row == 0)
-            {
-                p = Piece.BlackBishop;
-            }
+                return Piece.BlackBishop;
+
             if (column == 3 && row == 0)
-            {
-                p = Piece.BlackQueen;
-            }
+                return Piece.BlackQueen;
+
             if (column == 4 && row == 0)
-            {
-                p = Piece.BlackKing;
-            }
+                return Piece.BlackKing;
+
             if (row == 1)
-            {
-                p = Piece.BlackPawn;
-            }
+                return Piece.BlackPawn;
 
 
             if ((column == 0 || column == 7) && row == 7)
-            {
-                p = Piece.WhiteRook;
-            }
-            if ((column == 1 || column == 6) && row == 7)
-            {
-                p = Piece.WhiteKnight;
-            }
-            if ((column == 2 || column == 5) && row == 7)
-            {
-                p = Piece.WhiteBishop;
-            }
-            if (column == 3 && row == 7)
-            {
-                p = Piece.WhiteQueen;
-            }
-            if (column == 4 && row == 7)
-            {
-                p = Piece.WhiteKing;
-            }
-            if (row == 6)
-            {
-                p = Piece.WhitePawn;
-            }
+                return Piece.WhiteRook;
 
-            return p;
+            if ((column == 1 || column == 6) && row == 7)
+                return Piece.WhiteKnight;
+
+            if ((column == 2 || column == 5) && row == 7)
+                return Piece.WhiteBishop;
+
+            if (column == 3 && row == 7)
+                return Piece.WhiteQueen;
+
+            if (column == 4 && row == 7)
+                return Piece.WhiteKing;
+
+            if (row == 6)
+                return Piece.WhitePawn;
+
+            return Piece.Empty;
         }
 
         private void ResetHints()
@@ -121,57 +355,77 @@ namespace eChess
                 }
             }
         }
-
-        private void ShowAvaibleMoves(Piece piece)
+        private void PlaySound()
         {
-            List<Point> validMoves = moves.GetValidMoves(piece, pos, board, whitesTurn, false);
+            if (board[newPos.X, newPos.Y].Piece != Piece.Empty)
+                PlaySound(Properties.Resources.Capture);
+            else
+                PlaySound(Properties.Resources.Move);
+        }
 
-            slctdBtn.Background = this.FindResource("SelectedBrush") as Brush;
-            foreach (var move in validMoves)
+        private void EnPassent()
+        {
+            foreach (var field in board)
             {
-                int column = move.X + 1;
-                int row = move.Y + 1;
-                Button button = (Button)Grid.FindName("Field" + column + "_" + row);
-                if (board[move.X, move.Y].Piece != Piece.Empty)
+                if (field.DoubleMoved == true)
                 {
-                    button.Style = this.FindResource("OccupiedField") as Style;
+                    if (doubleMoveForEnPassent == true)
+                    {
+                        board[field.Point.X, field.Point.Y].DoubleMoved = false;
+                        doubleMoveForEnPassent = false;
+                    }
+                    else
+                    {
+                        doubleMoveForEnPassent = true;
+                    }
                 }
-                button.Visibility = Visibility.Visible;
+            }
+
+            if (slctdBtn.Name.Contains("BP"))
+            {
+                Point currentPos = new Point(Grid.GetColumn(slctdBtn), Grid.GetRow(slctdBtn));
+                if (newPos.Y - currentPos.Y == 2)
+                {
+                    board[newPos.X, newPos.Y].DoubleMoved = true;
+                }
+            }
+            else if (slctdBtn.Name.Contains("WP"))
+            {
+                Point currentPos = new Point(Grid.GetColumn(slctdBtn), Grid.GetRow(slctdBtn));
+                if (currentPos.Y - newPos.Y == 2)
+                {
+                    board[newPos.X, newPos.Y].DoubleMoved = true;
+                }
             }
         }
 
-        private void Field_Click(object sender, RoutedEventArgs e)
+        private void HighlightFields()
         {
+            var currentPos = new Point(this.currentPos.X + 1, this.currentPos.Y + 1);
+            var newPos = new Point(this.newPos.X + 1, this.newPos.Y + 1);
+
             //Reset check
             WK.Background = Brushes.Transparent;
             BK.Background = Brushes.Transparent;
             lastSelectedPiece.Background = this.FindResource("DefaultBrush") as Brush;
-
-            var clickedBtn = sender as Button;
-            Point p = new Point(Grid.GetColumn(clickedBtn), Grid.GetRow(clickedBtn));
-            if (board[p.X, p.Y].Piece != Piece.Empty)
+            foreach (var field in markedFields)
             {
-                PlaySound(Properties.Resources.Capture);
-                RemovePiece(p);
+                var button = Grid.FindName("Hint" + field.X + "_" + field.Y) as Shape;
+                button.SetValue(Shape.FillProperty, DependencyProperty.UnsetValue);
             }
-            else
-            {
-                PlaySound(Properties.Resources.Move);
-            }
-            board[p.X, p.Y].Piece = board[pos.X, pos.Y].Piece;
-            board[pos.X, pos.Y].Piece = Piece.Empty;
+            markedFields.Clear();
 
-            Grid.SetColumn(slctdBtn, p.X);
-            Grid.SetRow(slctdBtn, p.Y);
-            ResetHints();
-            RotateBoardAndPieces();
-            GameEndChecker.RunWorkerAsync();
+            (Grid.FindName("Hint" + currentPos.X + "_" + currentPos.Y) as System.Windows.Shapes.Rectangle).Fill = Brushes.MediumSpringGreen;
+            markedFields.Add(currentPos);
+
+            (Grid.FindName("Hint" + newPos.X + "_" + newPos.Y) as System.Windows.Shapes.Rectangle).Fill = Brushes.SpringGreen;
+            markedFields.Add(newPos);
         }
 
         private void CheckForGameEnd(object sender, DoWorkEventArgs e)
         {
             bool wT = !whitesTurn;
-            currentlyInCheck = Check.IsCheck(board, wT);
+            currentlyInCheck = Check.IsCheck(board, wT, currentlyInCheck);
             if (currentlyInCheck)
             {
                 if (wT)
@@ -191,6 +445,7 @@ namespace eChess
             }
             else
             {
+                //Check for stalemate
                 if (AtLeastOneMove(wT) == false)
                 {
                     Dispatcher.BeginInvoke(new Action(() => GameEndingAnimation("")));
@@ -226,7 +481,8 @@ namespace eChess
             {
                 if (pieces.Contains(field.Piece))
                 {
-                    if (moves.GetValidMoves(field.Piece, field.Point, board, !wT, false).Count > 0)
+                    var legalMoves = moves.GetValidMoves(field.Piece, field.Point, board, !wT, false, currentlyInCheck);
+                    if (legalMoves.Count > 0)
                     {
                         return true;
                     }
@@ -246,15 +502,13 @@ namespace eChess
         {
             DoubleAnimation gridAnimation;
             DoubleAnimation btnsAnimation;
-            if (whitesTurn == true)
+            if (whitesTurn)
             {
-                whitesTurn = false;
                 btnsAnimation = new DoubleAnimation(0, 180, new Duration(TimeSpan.FromSeconds(0.5)));
                 gridAnimation = new DoubleAnimation(0, 180, new Duration(TimeSpan.FromSeconds(0.5)));
             }
             else
             {
-                whitesTurn = true;
                 btnsAnimation = new DoubleAnimation(180, 0, new Duration(TimeSpan.FromSeconds(0.5)));
                 gridAnimation = new DoubleAnimation(180, 0, new Duration(TimeSpan.FromSeconds(0.5)));
             }
@@ -279,8 +533,14 @@ namespace eChess
             btnsRT.BeginAnimation(RotateTransform.AngleProperty, btnsAnimation);
         }
 
-        private void RemovePiece(Point p)
+        private void RemovePiece()
         {
+            int y = 1;
+            if (whitesTurn == false)
+            {
+                y = -1;
+            }
+
             List<Button> buttons;
             if (whitesTurn == true)
             {
@@ -294,93 +554,138 @@ namespace eChess
             {
                 if (button.Visibility == Visibility.Visible)
                 {
-                    if (p.X == Grid.GetColumn(button) && p.Y == Grid.GetRow(button))
+                    if (newPos.X == Grid.GetColumn(button) && newPos.Y == Grid.GetRow(button))
                     {
                         button.Visibility = Visibility.Collapsed;
                     }
+                    else
+                    {
+                        RemovePieceWhenEnPassent(newPos, y, button);
+                    }
+                }
+            }
+        }
+
+        private void RemovePieceWhenEnPassent(Point p, int y, Button button)
+        {
+            Point pawnPos = new Point(-1, -1);
+            foreach (var field in board)
+            {
+                if (field.DoubleMoved == true)
+                {
+                    pawnPos = field.Point;
+                }
+            }
+            if (pawnPos.X != -1 && pawnPos.Y != -1)
+            {
+                var column = Grid.GetColumn(button);
+                var row = Grid.GetRow(button);
+                if (column == p.X && p.Y + y == row && pawnPos.X == p.X && pawnPos.Y == p.Y + y)
+                {
+                    //Capture pawn because it is on a different field when en passent happens
+                    button.Visibility = Visibility.Collapsed;
+                    board[column, row].Piece = Piece.Empty;
                 }
             }
         }
 
         private void Piece_Click(object sender, RoutedEventArgs e)
         {
-            slctdBtn = sender as Button;
-
-            if (lastSelectedPiece != null)
+            if (onlineGame == false || (onlineGame == true && waitingForOpponent == false))
             {
-                if (currentlyInCheck == true && (lastSelectedPiece.Name == "BK" || lastSelectedPiece.Name == "WK"))
+                slctdBtn = sender as Button;
+
+                if (lastSelectedPiece != null)
                 {
-                    lastSelectedPiece.Background = Brushes.Red;
+                    if (currentlyInCheck == true && (lastSelectedPiece.Name == "BK" || lastSelectedPiece.Name == "WK"))
+                    {
+                        lastSelectedPiece.Background = Brushes.Red;
+                    }
+                    else
+                    {
+                        lastSelectedPiece.Background = this.FindResource("DefaultBrush") as Brush;
+                    }
+                }
+
+                lastSelectedPiece = slctdBtn;
+
+                currentPos.X = Grid.GetColumn(slctdBtn);
+                currentPos.Y = Grid.GetRow(slctdBtn);
+
+                ResetHints();
+
+                if (!whitesTurn)
+                {
+                    if (slctdBtn.Name.Contains("BB"))
+                    {
+                        ShowAvaibleMoves(Piece.BlackBishop);
+                    }
+
+                    if (slctdBtn.Name.Contains("BN"))
+                    {
+                        ShowAvaibleMoves(Piece.BlackKnight);
+                    }
+
+                    if (slctdBtn.Name.Contains("BR"))
+                    {
+                        ShowAvaibleMoves(Piece.BlackRook);
+                    }
+
+                    if (slctdBtn.Name.Contains("BQ"))
+                    {
+                        ShowAvaibleMoves(Piece.BlackQueen);
+                    }
+
+                    if (slctdBtn.Name.Contains("BK"))
+                    {
+                        ShowAvaibleMoves(Piece.BlackKing);
+                    }
+
+                    if (slctdBtn.Name.Contains("BP"))
+                    {
+                        if (!promotedPieces.Contains(slctdBtn.Name))
+                        {
+                            ShowAvaibleMoves(Piece.BlackPawn);
+                        }
+                        else
+                        {
+                            ShowAvaibleMoves(Piece.BlackQueen);
+                        }
+                    }
                 }
                 else
                 {
-                    lastSelectedPiece.Background = this.FindResource("DefaultBrush") as Brush;
-                }
-            }
-            lastSelectedPiece = slctdBtn;
-
-            pos.X = Grid.GetColumn(slctdBtn);
-            pos.Y = Grid.GetRow(slctdBtn);
-
-            ResetHints();
-
-            if (!whitesTurn)
-            {
-                if (slctdBtn.Name.Contains("BB"))
-                {
-                    ShowAvaibleMoves(Piece.BlackBishop);
-                }
-
-                if (slctdBtn.Name.Contains("BN"))
-                {
-                    ShowAvaibleMoves(Piece.BlackKnight);
-                }
-
-                if (slctdBtn.Name.Contains("BR"))
-                {
-                    ShowAvaibleMoves(Piece.BlackRook);
-                }
-
-                if (slctdBtn.Name.Contains("BQ"))
-                {
-                    ShowAvaibleMoves(Piece.BlackQueen);
-                }
-
-                if (slctdBtn.Name.Contains("BK"))
-                {
-                    ShowAvaibleMoves(Piece.BlackKing);
-                }
-
-                if (slctdBtn.Name.Contains("BP"))
-                {
-                    ShowAvaibleMoves(Piece.BlackPawn);
-                }
-            }
-            else
-            {
-                if (slctdBtn.Name.Contains("WP"))
-                {
-                    ShowAvaibleMoves(Piece.WhitePawn);
-                }
-                if (slctdBtn.Name.Contains("WK"))
-                {
-                    ShowAvaibleMoves(Piece.WhiteKing);
-                }
-                if (slctdBtn.Name.Contains("WQ"))
-                {
-                    ShowAvaibleMoves(Piece.WhiteQueen);
-                }
-                if (slctdBtn.Name.Contains("WR"))
-                {
-                    ShowAvaibleMoves(Piece.WhiteRook);
-                }
-                if (slctdBtn.Name.Contains("WN"))
-                {
-                    ShowAvaibleMoves(Piece.WhiteKnight);
-                }
-                if (slctdBtn.Name.Contains("WB"))
-                {
-                    ShowAvaibleMoves(Piece.WhiteBishop);
+                    if (slctdBtn.Name.Contains("WP"))
+                    {
+                        if (!promotedPieces.Contains(slctdBtn.Name))
+                        {
+                            ShowAvaibleMoves(Piece.WhitePawn);
+                        }
+                        else
+                        {
+                            ShowAvaibleMoves(Piece.WhiteQueen);
+                        }
+                    }
+                    if (slctdBtn.Name.Contains("WK"))
+                    {
+                        ShowAvaibleMoves(Piece.WhiteKing);
+                    }
+                    if (slctdBtn.Name.Contains("WQ"))
+                    {
+                        ShowAvaibleMoves(Piece.WhiteQueen);
+                    }
+                    if (slctdBtn.Name.Contains("WR"))
+                    {
+                        ShowAvaibleMoves(Piece.WhiteRook);
+                    }
+                    if (slctdBtn.Name.Contains("WN"))
+                    {
+                        ShowAvaibleMoves(Piece.WhiteKnight);
+                    }
+                    if (slctdBtn.Name.Contains("WB"))
+                    {
+                        ShowAvaibleMoves(Piece.WhiteBishop);
+                    }
                 }
             }
         }
@@ -394,6 +699,63 @@ namespace eChess
         {
             System.Windows.Forms.Application.Restart();
             Application.Current.Dispatcher.Invoke(() => this.Close());
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void NameTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (!string.IsNullOrWhiteSpace(NameTextBox.Text) && NameTextBox.Text != "Anonymous")
+            {
+                Directory.CreateDirectory(path);
+                File.WriteAllText(path + "username", NameTextBox.Text);
+            }
+        }
+
+        private void StartOnlineGame_Click(object sender, RoutedEventArgs e)
+        {
+            if (ProgressRing.Visibility != Visibility.Visible)
+            {
+                onlineGame = true;
+                if (File.Exists(path + "username"))
+                {
+                    playerName = File.ReadAllText(path + "username");
+                }
+                else
+                {
+                    playerName = "Anonymous";
+                }
+                StartOnlineGame.Background = Brushes.Red;
+                StartOnlineGame.Content = "Cancel search";
+                ProgressRing.Visibility = Visibility.Visible;
+                StartBackgroundworker();
+            }
+            else
+            {
+                //Cancel search
+                StartOnlineGame.Background = Brushes.DeepSkyBlue;
+                StartOnlineGame.Content = "Online game";
+                ProgressRing.Visibility = Visibility.Collapsed;
+                backgroundMatchFinder.CancelAsync();
+                StartOnlineGame.IsEnabled = false;
+            }
+        }
+
+        private void StartBackgroundworker()
+        {
+            backgroundMatchFinder = new BackgroundWorker();
+            backgroundMatchFinder.RunWorkerCompleted += BackgroundMatchFinder_RunWorkerCompleted;
+            backgroundMatchFinder.DoWork += BackgroundMatchFinder_DoWork;
+            backgroundMatchFinder.WorkerSupportsCancellation = true;
+            backgroundMatchFinder.RunWorkerAsync();
+        }
+
+        private void StartLocalGame_Click(object sender, RoutedEventArgs e)
+        {
+            Menu.Visibility = Visibility.Collapsed;
         }
     }
 }

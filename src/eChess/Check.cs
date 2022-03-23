@@ -10,9 +10,9 @@ namespace eChess
 {
     internal class Check
     {
-        static Moves moves = new Moves();
+        static readonly Moves moves = new Moves();
 
-        static public bool IsCheck(Field[,] board, bool whitesTurn)
+        static public bool IsCheck(Field[,] board, bool whitesTurn, bool currentlyInCheck)
         {
             List<Piece> pieces = new List<Piece> { Piece.WhiteBishop, Piece.WhiteKnight, Piece.WhitePawn, Piece.WhiteQueen, Piece.WhiteRook, Piece.WhiteKing };
             if (whitesTurn == false)
@@ -28,7 +28,7 @@ namespace eChess
                 var allPiecesOfOneType = GetPiecePos(board, piece);
                 foreach (var pos in allPiecesOfOneType)
                 {
-                    var result = moves.GetValidMoves(piece, pos, board, whitesTurn, true);
+                    var result = moves.GetValidMoves(piece, pos, board, whitesTurn, true, currentlyInCheck);
                     if (result.Contains(GetPiecePos(board, king).FirstOrDefault()))
                     {
                         //Check detected

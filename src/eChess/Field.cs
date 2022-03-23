@@ -13,5 +13,9 @@ namespace eChess
         public Point Point { get; set; }
         
         public Piece Piece { get; set; }
+
+        public bool DoubleMoved { get; set; }
+
+        public bool FieldActivated { get; set; }
     }
 }
