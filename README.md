@@ -16,7 +16,7 @@ Offline chess for two players inspired by lichess
 
 A programm made with C# / WPF for windows to play chess against friends either local on one device or online.
 
-[Download](https://github.com/SagMeinenNamen/eChess/releases/download/v1.0/eChess.exe)
+[Download](https://github.com/SagMeinenNamen/eChess/raw/main/eChess-Installer.exe)
 
 <hr>
 
