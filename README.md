@@ -41,6 +41,7 @@ A programm made with C# / WPF for windows to play chess against friends either l
 - [x] Add castling rule
 - [x] Add promotion of pawns when they reach last row
 - [x] Online games
+- [x] See opponent username
 - [ ] Settings page
 - [ ] Customize sound effects
 - [ ] Customize colors
