@@ -42,6 +42,8 @@ A programm made with C# / WPF for windows to play chess against friends either l
 - [x] Add promotion of pawns when they reach last row
 - [x] Online games
 - [x] See opponent username
+- [ ] Create shortcuts on desktop and windows start menu
+- [ ] Auto update the programm when a new version is avaiable
 - [ ] Settings page
 - [ ] Customize sound effects
 - [ ] Customize colors
