@@ -34,7 +34,7 @@ namespace eChess
         Point currentPos = new Point(0, 0);
         Point newPos = new Point(0, 0);
         readonly List<Point> markedFields = new List<Point>();
-        readonly List<string> promotedPieces = new List<string>();
+        List<string> promotedPieces = new List<string>();
         Button lastSelectedPiece = new Button();
         Button slctdBtn;
         bool currentlyInCheck;
@@ -49,10 +49,12 @@ namespace eChess
         BackgroundWorker sendMove = new BackgroundWorker();
         BackgroundWorker receiveMove = new BackgroundWorker();
         MoveEntity opponentsMove = new MoveEntity();
+        readonly List<Button> allPieces = new List<Button>();
 
         public MainWindow()
         {
             InitializeComponent();
+            allPieces = new List<Button> { BB1, BB2, BK, BN1, BN2, BP1, BP2, BP3, BP4, BP5, BP6, BP7, BP8, BQ, BR1, BR2, WB1, WB2, WK, WN1, WN2, WP1, WP2, WP3, WP4, WP5, WP6, WP7, WP8, WQ, WR1, WR2 };
             SetupChessBoard();
             Username();
             GameEndChecker.DoWork += CheckForGameEnd;
@@ -61,22 +63,28 @@ namespace eChess
 
         private void BackgroundMatchFinder_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            StartOnlineGame.IsEnabled = true;
-            if (game != null)
+            if (game is null)
             {
-                if (game.GameID != Guid.Empty)
-                {
-                    PrepareOnlineGame();
-                }
+                CancelSearch();
             }
+            else if (game.GameID != Guid.Empty)
+            {
+                PrepareOnlineGame();
+            }
+            StartOnlineGame.IsEnabled = true;
         }
 
         private void PrepareOnlineGame()
         {
-            StartOnlineGame.Background = Brushes.DeepSkyBlue;
+            StartOnlineGame.IsEnabled = true;
+            StartOnlineGame.Background = Brushes.DarkSlateBlue;
             StartOnlineGame.Content = "Online game";
             ProgressRing.Visibility = Visibility.Collapsed;
             Menu.Visibility = Visibility.Collapsed;
+            OpponentName.Text = game.OpponentName;
+            OpponentName.Visibility = Visibility.Visible;
+            OpponentText.Visibility = Visibility.Visible;
+            Grid.Visibility = Visibility.Visible;
             if (game.White == false)
             {
                 RotateBoardAndPieces();
@@ -113,6 +121,48 @@ namespace eChess
                     board[column, row] = new Field { Point = new Point(column, row), Piece = p };
                 }
             }
+
+            Dictionary<Button, Point> keyValuePairs = new Dictionary<Button, Point>()
+            {
+                {BB1, new Point(5,0) },
+                {BB2, new Point(2,0) },
+                {BK, new Point(4,0) },
+                {BN1, new Point(6,0) },
+                {BN2, new Point(1,0) },
+                {BQ, new Point(3,0) },
+                {BR1, new Point(7,0) },
+                {BR2, new Point(0,0) },
+                {BP1, new Point(0,1) },
+                {BP2, new Point(1,1) },
+                {BP3, new Point(2,1) },
+                {BP4, new Point(3,1) },
+                {BP5, new Point(4,1) },
+                {BP6, new Point(5,1) },
+                {BP7, new Point(6,1) },
+                {BP8, new Point(7,1) },
+                {WB1, new Point(2,7) },
+                {WB2, new Point(5,7) },
+                {WK, new Point(4,7) },
+                {WN1, new Point(1,7) },
+                {WN2, new Point(6,7) },
+                {WQ, new Point(3,7) },
+                {WR1, new Point(0,7) },
+                {WR2, new Point(7,7) },
+                {WP1, new Point(0,6) },
+                {WP2, new Point(1,6) },
+                {WP3, new Point(2,6) },
+                {WP4, new Point(3,6) },
+                {WP5, new Point(4,6) },
+                {WP6, new Point(5,6) },
+                {WP7, new Point(6,6) },
+                {WP8, new Point(7,6) },
+            };
+            foreach (var piece in allPieces)
+            {
+                Grid.SetColumn(piece, keyValuePairs[piece].X);
+                Grid.SetRow(piece, keyValuePairs[piece].Y);
+                piece.Visibility = Visibility.Visible;
+            }
         }
 
 
@@ -138,10 +188,10 @@ namespace eChess
             Button clickedBtn = (Button)sender;
             newPos = new Point(Grid.GetColumn(clickedBtn), Grid.GetRow(clickedBtn));
             MakeMove();
-            PostMove();
             PlaySound();
             if (onlineGame == true)
             {
+                PostMove();
                 ReceiveMove();
             }
             whitesTurn = !whitesTurn;
@@ -194,7 +244,7 @@ namespace eChess
 
         private void ReceiveMove_DoWork(object sender, DoWorkEventArgs e)
         {
-            opponentsMove = GameController.ReceiveMove(game.GameID, playerGuid, receiveMove).Result;
+            opponentsMove = GameController.ReceiveMove(game.GameID, playerGuid).Result;
         }
 
         private void PostMove()
@@ -204,9 +254,9 @@ namespace eChess
             sendMove.RunWorkerAsync();
         }
 
-        private void SendMove_DoWork(object sender, DoWorkEventArgs e)
+        private async void SendMove_DoWork(object sender, DoWorkEventArgs e)
         {
-            GameController.PostMove(game.GameID, playerGuid, currentPos, newPos);
+            while (await GameController.PostMove(game.GameID, playerGuid, currentPos, newPos) == false) ;
         }
 
         private void MakeMove()
@@ -456,6 +506,8 @@ namespace eChess
         private void GameEndingAnimation(string player)
         {
             Grid.Effect = new BlurEffect();
+            OpponentName.Visibility = Visibility.Collapsed;
+            OpponentText.Visibility = Visibility.Collapsed;
             if (String.IsNullOrEmpty(player))
             {
                 ReasonText.Text = "by stalemate";
@@ -513,7 +565,6 @@ namespace eChess
                 gridAnimation = new DoubleAnimation(180, 0, new Duration(TimeSpan.FromSeconds(0.5)));
             }
 
-            List<Button> allPieces = new List<Button> { BB1, BB2, BK, BN1, BN2, BP1, BP2, BP3, BP4, BP5, BP6, BP7, BP8, BQ, BR1, BR2, WB1, WB2, WK, WN1, WN2, WP1, WP2, WP3, WP4, WP5, WP6, WP7, WP8, WQ, WR1, WR2 };
 
             RotateTransform gridRT = new RotateTransform();
             RotateTransform btnsRT = new RotateTransform();
@@ -697,13 +748,57 @@ namespace eChess
 
         private void NewGameBtn_Click(object sender, RoutedEventArgs e)
         {
-            System.Windows.Forms.Application.Restart();
-            Application.Current.Dispatcher.Invoke(() => this.Close());
+            Grid.Visibility = Visibility.Collapsed;
+            SetupChessBoard();
+            ResetEndScreen();
+            ResetHighlights();
+            ResetVariables();
+            ResetBoardRotation();
         }
 
-        private void Window_Loaded(object sender, RoutedEventArgs e)
+        private void ResetBoardRotation()
         {
+            Grid.RenderTransform = new RotateTransform(0);
+            foreach (var button in allPieces)
+            {
+                button.RenderTransform = new RotateTransform(0);
+                button.RenderTransformOrigin = new System.Windows.Point(0.5, 0.5);
+            }
+        }
 
+        private void ResetVariables()
+        {
+            currentPos = new Point(0, 0);
+            newPos = new Point(0, 0);
+            promotedPieces = new List<string>();
+            lastSelectedPiece = new Button();
+            currentlyInCheck = false;
+            doubleMoveForEnPassent = false;
+            whitesTurn = true;
+            onlineGame = false;
+            waitingForOpponent = false;
+            markedFields.Clear();
+            game = new GameEntity();
+        }
+
+        private void ResetHighlights()
+        {
+            WK.Background = Brushes.Transparent;
+            BK.Background = Brushes.Transparent;
+            Menu.Visibility = Visibility.Visible;
+            lastSelectedPiece.Background = this.FindResource("DefaultBrush") as Brush;
+            foreach (var field in markedFields)
+            {
+                var button = Grid.FindName("Hint" + field.X + "_" + field.Y) as Shape;
+                button.SetValue(Shape.FillProperty, DependencyProperty.UnsetValue);
+            }
+        }
+
+        private void ResetEndScreen()
+        {
+            EndScreenGrid.Visibility = Visibility.Collapsed;
+            EndScreenGrid.Width = 0;
+            Grid.Effect = null;
         }
 
         private void NameTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -720,14 +815,7 @@ namespace eChess
             if (ProgressRing.Visibility != Visibility.Visible)
             {
                 onlineGame = true;
-                if (File.Exists(path + "username"))
-                {
-                    playerName = File.ReadAllText(path + "username");
-                }
-                else
-                {
-                    playerName = "Anonymous";
-                }
+                playerName = NameTextBox.Text;
                 StartOnlineGame.Background = Brushes.Red;
                 StartOnlineGame.Content = "Cancel search";
                 ProgressRing.Visibility = Visibility.Visible;
@@ -735,13 +823,19 @@ namespace eChess
             }
             else
             {
-                //Cancel search
-                StartOnlineGame.Background = Brushes.DeepSkyBlue;
-                StartOnlineGame.Content = "Online game";
-                ProgressRing.Visibility = Visibility.Collapsed;
-                backgroundMatchFinder.CancelAsync();
-                StartOnlineGame.IsEnabled = false;
+                CancelSearch();
             }
+        }
+
+        private void CancelSearch()
+        {
+            //Cancel search
+            onlineGame = false;
+            StartOnlineGame.Background = Brushes.DarkSlateBlue;
+            StartOnlineGame.Content = "Online game";
+            ProgressRing.Visibility = Visibility.Collapsed;
+            backgroundMatchFinder.CancelAsync();
+            StartOnlineGame.IsEnabled = false;
         }
 
         private void StartBackgroundworker()
@@ -756,6 +850,7 @@ namespace eChess
         private void StartLocalGame_Click(object sender, RoutedEventArgs e)
         {
             Menu.Visibility = Visibility.Collapsed;
+            Grid.Visibility = Visibility.Visible;
         }
     }
 }

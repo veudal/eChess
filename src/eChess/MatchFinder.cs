@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace eChess
 {
@@ -24,29 +25,45 @@ namespace eChess
 
         public async Task<GameEntity> FindMatch(Guid playerGuid, string playerName, BackgroundWorker worker)
         {
-            var response = await client.GetAsync("/MatchFinder/JoinGame?playerGuid=" + playerGuid + "&playerName=" + playerName).Result.Content.ReadAsStringAsync();
-            GameEntity game = JsonConvert.DeserializeObject<GameEntity>(response);
-            if (game.GameID == Guid.Empty)
+            try
             {
-                return await CreateMatch(playerGuid, playerName, worker);
+                var response = await client.GetAsync("/MatchFinder/JoinGame?playerGuid=" + playerGuid + "&playerName=" + playerName).Result.Content.ReadAsStringAsync();
+                GameEntity game = JsonConvert.DeserializeObject<GameEntity>(response);
+                if (game.GameID == Guid.Empty)
+                {
+                    return await CreateMatch(playerGuid, playerName, worker);
+                }
+                else
+                {
+                    return game;
+                }
             }
-            else
+            catch (Exception ex)
             {
-                return game;
+                MessageBox.Show(ex.Message);
+                return null;
             }
         }
         private async Task<GameEntity> CreateMatch(Guid playerGuid, string playerName, BackgroundWorker worker)
         {
             GameEntity game = new GameEntity();
-            while (worker.CancellationPending == false)
+            try
             {
-                await Task.Delay(100);
-                var response = await client.GetAsync("/MatchFinder/CreateGame?playerGuid=" + playerGuid + "&playerName=" + playerName).Result.Content.ReadAsStringAsync();
-                game = JsonConvert.DeserializeObject<GameEntity>(response);
-                if (game != null  && game.GameID != Guid.Empty)
+                while (worker.CancellationPending == false)
                 {
-                    return game;
+                    await Task.Delay(100);
+                    var response = await client.GetAsync("/MatchFinder/CreateGame?playerGuid=" + playerGuid + "&playerName=" + playerName).Result.Content.ReadAsStringAsync();
+                    game = JsonConvert.DeserializeObject<GameEntity>(response);
+                    if (game != null && game.GameID != Guid.Empty)
+                    {
+                        return game;
+                    }
                 }
+
+            }
+            catch
+            {
+                return null;
             }
             return game;
         }

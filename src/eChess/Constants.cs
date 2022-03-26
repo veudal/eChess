@@ -10,7 +10,7 @@ namespace eChess
     {
         public const string ApiBaseAddress = Public;
         const string Public = "https://echess.azurewebsites.net/api";
-        const string local = "https://localhost:7269/api";
+        const string Local = "https://localhost:7269/api";
 
     }
 }
