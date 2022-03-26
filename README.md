@@ -20,9 +20,9 @@ A programm made with C# / WPF for windows to play chess against friends either l
 
 <hr>
 
-![image](https://user-images.githubusercontent.com/62218506/158252863-b46c4084-c1a5-48aa-b4f1-34ea174e5e76.png)
+![image](https://user-images.githubusercontent.com/62218506/160243290-54b2295a-c946-447f-afc4-795c997a64e2.png)
 
-![image](https://user-images.githubusercontent.com/62218506/158258647-ba376a47-8b01-4315-a44a-b030ec9a833c.png)
+![image](https://user-images.githubusercontent.com/62218506/160243262-43dd692a-a971-4ea8-9e75-745d7ecd9119.png)
 
 # Features
 
