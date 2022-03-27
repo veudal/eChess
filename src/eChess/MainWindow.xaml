@@ -7,18 +7,17 @@
         xmlns:local="clr-namespace:eChess"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         mc:Ignorable="d"
-        x:Uid="MainWindow" Title="eChess" WindowState="Maximized" Height="720" Width="1200" Background="DarkSlateGray" WindowStartupLocation="CenterScreen">
+        x:Uid="MainWindow" Title="eChess" WindowState="Maximized" Height="720" Width="1200"  Background="DarkSlateGray" WindowStartupLocation="CenterScreen">
     <Window.Resources>
         <SolidColorBrush x:Key="SelectedBrush" Color="#FF00BFFF" Opacity="0.4"/>
         <SolidColorBrush x:Key="DefaultBrush" Color="Transparent"/>
         <BeginStoryboard x:Key="EndScreenAnimation">
             <Storyboard>
-                <DoubleAnimation Storyboard.TargetName="EndScreenGrid" 
+                <DoubleAnimation DecelerationRatio="0.7" Storyboard.TargetName="EndScreenGrid" 
                        Storyboard.TargetProperty="Width" From="0" To="{Binding ElementName=ParentGrid, Path=ActualWidth}" 
-                       Duration="0:0:1.5" BeginTime="0:0:0"/>
+                       Duration="0:0:1.5" BeginTime="0:0:0" />
                 <DoubleAnimation Storyboard.TargetName="WinnerText" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:3" BeginTime="0:0:0"/>
                 <DoubleAnimation Storyboard.TargetName="ReasonText" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:3" BeginTime="0:0:0"/>
-
                 <DoubleAnimation Storyboard.TargetName="ExitBtn" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:3" BeginTime="0:0:0"/>
                 <DoubleAnimation Storyboard.TargetName="NewGameBtn" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:3" BeginTime="0:0:0"/>
             </Storyboard>
@@ -105,10 +104,17 @@
             <Setter Property="Fill" Value="Azure"/>
         </Style>
         <Style x:Key="BlackColor" TargetType="Rectangle">
-            <Setter Property="Fill" Value="DarkSlateBlue"/>
+            <Setter Property="Fill" Value="SlateBlue"/>
         </Style>
     </Window.Resources>
     <Grid x:Name="ParentGrid">
+        <Grid.Background>
+            <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                <GradientStop Color="LightSeaGreen"/>
+                <GradientStop Color="#FF1D5C59" Offset="1"/>
+                <GradientStop Color="#FF2DA9A3"/>
+            </LinearGradientBrush>
+        </Grid.Background>
         <Grid Panel.ZIndex="5" x:Name="EndScreenGrid"  Width="0" Grid.ColumnSpan="8" Grid.RowSpan="8" Visibility="Collapsed">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
@@ -196,6 +202,7 @@
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
+                <Frame x:Name="UpdatePage" Panel.ZIndex="1" Grid.ColumnSpan="11" Grid.RowSpan="9" Visibility="Collapsed"/>
                 <TextBlock Text="eChess" FontSize="90" Grid.Column="4" Grid.RowSpan="2" Grid.ColumnSpan="4" Foreground="White" FontStyle="Italic" FontWeight="Bold" VerticalAlignment="Center"/>
                 <Button x:Name="StartLocalGame"  Grid.Column="4" Grid.Row="3" Grid.ColumnSpan="3" Style="{StaticResource MaterialDesignFlatAccentBgButton}"  materialDesign:ButtonAssist.CornerRadius="15" Height="auto" BorderThickness="0" Content="Local game" FontSize="30" Foreground="White" FontWeight="Bold" Background="DarkSlateBlue" Click="StartLocalGame_Click"/>
                 <Button x:Name="StartOnlineGame" Grid.Column="4" Grid.Row="5" Grid.ColumnSpan="3" Style="{StaticResource MaterialDesignFlatAccentBgButton}"  materialDesign:ButtonAssist.CornerRadius="15" Height="auto" BorderThickness="0" Content="Online game" FontSize="30" Foreground="White" FontWeight="Bold" Background="DarkSlateBlue" Click="StartOnlineGame_Click"/>

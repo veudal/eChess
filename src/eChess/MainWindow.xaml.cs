@@ -22,11 +22,14 @@ using System.Windows.Media.Imaging;
 using eChessServer.Entities;
 using Newtonsoft.Json;
 using System.Linq;
+using System.Diagnostics;
+using DK.WshRuntime;
 
 namespace eChess
 {
     public partial class MainWindow : Window
     {
+        readonly string currentVersion = "v1.3";
         readonly string path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "\\eChess\\";
         readonly Field[,] board = new Field[8, 8];
         readonly BackgroundWorker GameEndChecker = new BackgroundWorker();
@@ -49,16 +52,28 @@ namespace eChess
         BackgroundWorker sendMove = new BackgroundWorker();
         BackgroundWorker receiveMove = new BackgroundWorker();
         MoveEntity opponentsMove = new MoveEntity();
-        readonly List<Button> allPieces = new List<Button>();
+        List<Button> allPieces = new List<Button>();
 
         public MainWindow()
         {
             InitializeComponent();
-            allPieces = new List<Button> { BB1, BB2, BK, BN1, BN2, BP1, BP2, BP3, BP4, BP5, BP6, BP7, BP8, BQ, BR1, BR2, WB1, WB2, WK, WN1, WN2, WP1, WP2, WP3, WP4, WP5, WP6, WP7, WP8, WQ, WR1, WR2 };
+            Directory.CreateDirectory(path);
             SetupChessBoard();
-            Username();
+            SetUsername();
+            Update();
+            CreateShortcuts();
             GameEndChecker.DoWork += CheckForGameEnd;
+        }
 
+
+        private void Update()
+        {
+            Updater updater = new Updater();
+            if (updater.NewVersionAvailable(currentVersion) == true)
+            {
+                UpdatePage.Content = updater;
+                UpdatePage.Visibility = Visibility.Visible;
+            }
         }
 
         private void BackgroundMatchFinder_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
@@ -98,9 +113,8 @@ namespace eChess
             game = matchFinder.FindMatch(playerGuid, playerName, backgroundMatchFinder).Result;
         }
 
-        private void Username()
+        private void SetUsername()
         {
-            Directory.CreateDirectory(path);
             if (File.Exists(path + "username"))
             {
                 string name = File.ReadAllText(path + "username");
@@ -110,6 +124,8 @@ namespace eChess
 
         private void SetupChessBoard()
         {
+            allPieces = new List<Button> { BB1, BB2, BK, BN1, BN2, BP1, BP2, BP3, BP4, BP5, BP6, BP7, BP8, BQ, BR1, BR2, WB1, WB2, WK, WN1, WN2, WP1, WP2, WP3, WP4, WP5, WP6, WP7, WP8, WQ, WR1, WR2 };
+
             //To initialize and make actual first call faster
             board.Clone<Field[,]>();
 
@@ -130,8 +146,8 @@ namespace eChess
                 {BN1, new Point(6,0) },
                 {BN2, new Point(1,0) },
                 {BQ, new Point(3,0) },
-                {BR1, new Point(7,0) },
-                {BR2, new Point(0,0) },
+                {BR1, new Point(0,0) },
+                {BR2, new Point(7,0) },
                 {BP1, new Point(0,1) },
                 {BP2, new Point(1,1) },
                 {BP3, new Point(2,1) },
@@ -520,7 +536,14 @@ namespace eChess
             }
             EndScreenGrid.Visibility = Visibility.Visible;
             BeginStoryboard sb = this.FindResource("EndScreenAnimation") as BeginStoryboard;
+            sb.Storyboard.Completed += Storyboard_Completed;
             sb.Storyboard.Begin();
+        }
+
+        private void Storyboard_Completed(object sender, EventArgs e)
+        {
+            EndScreenGrid.BeginAnimation(Grid.WidthProperty, null);
+            EndScreenGrid.Width = double.NaN;
         }
 
         private bool AtLeastOneMove(bool wT)
@@ -851,6 +874,40 @@ namespace eChess
         {
             Menu.Visibility = Visibility.Collapsed;
             Grid.Visibility = Visibility.Visible;
+        }
+
+
+        void CreateShortcuts()
+        {
+            CreateDesktopShortcut();
+            CreateStartMenuShortcut();
+        }
+
+        void CreateDesktopShortcut()
+        {
+            string pathToExe = Directory.GetCurrentDirectory() + "\\" + Process.GetCurrentProcess().ProcessName + ".exe";
+            if (pathToExe == Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "\\eChess\\" + currentVersion + "\\eChess.exe")
+            {
+                string desktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                string shortcutLocation = System.IO.Path.Combine(desktop, "eChess" + ".lnk");
+                if (!File.Exists(shortcutLocation))
+                {
+                    WshInterop.CreateShortcut(shortcutLocation, "eChess", pathToExe, null, null);
+                }
+            }
+        }
+
+        private void CreateStartMenuShortcut()
+        {
+            string pathToExe = Directory.GetCurrentDirectory() + "\\" + Process.GetCurrentProcess().ProcessName + ".exe";
+            if (pathToExe == Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "\\eChess\\" + currentVersion + "\\eChess.exe")
+            {
+                string shortcutLocation = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.StartMenu) + "\\Programs\\", "eChess" + ".lnk");
+                if (!File.Exists(shortcutLocation))
+                {
+                    WshInterop.CreateShortcut(shortcutLocation, null, pathToExe, null, null);
+                }
+            }
         }
     }
 }
