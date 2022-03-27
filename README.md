@@ -20,9 +20,11 @@ A programm made with C# / WPF for windows to play chess against friends either l
 
 <hr>
 
-![image](https://user-images.githubusercontent.com/62218506/160243290-54b2295a-c946-447f-afc4-795c997a64e2.png)
+![image](https://user-images.githubusercontent.com/62218506/160291316-30ae7052-90a9-43e6-b6fd-4a20ee572b77.png)
 
-![image](https://user-images.githubusercontent.com/62218506/160243262-43dd692a-a971-4ea8-9e75-745d7ecd9119.png)
+![Screenshot 2022-03-27 182811](https://user-images.githubusercontent.com/62218506/160291327-23f28656-98ac-4fe0-9d5e-2514279b7621.png)
+
+![image](https://user-images.githubusercontent.com/62218506/160291513-d315f41b-f4a8-4951-8cfb-97b47bb60413.png)
 
 # Features
 
@@ -42,8 +44,8 @@ A programm made with C# / WPF for windows to play chess against friends either l
 - [x] Add promotion of pawns when they reach last row
 - [x] Online games
 - [x] See opponent username
-- [ ] Create shortcuts on desktop and windows start menu
-- [ ] Auto update the programm when a new version is avaiable
+- [x] Create shortcuts on desktop and windows start menu
+- [x] Auto update the programm when a new version is avaiable
 - [ ] Settings page
 - [ ] Customize sound effects
 - [ ] Customize colors
