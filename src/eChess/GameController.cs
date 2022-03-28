@@ -17,8 +17,10 @@ namespace eChess
     {
         private static readonly HttpClient client = new HttpClient()
         {
-            BaseAddress = new Uri(Constants.ApiBaseAddress)
+            BaseAddress = new Uri(Constants.ApiBaseAddress),
+            Timeout = TimeSpan.FromMinutes(5)
         };
+        
 
 
         public static async Task<bool> PostMove(Guid gameID, Guid playerGuid, Point currentPos, Point newPos)
@@ -35,7 +37,7 @@ namespace eChess
             }
             catch(Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                //MessageBox.Show(ex.Message);
                 return false;
             }
 

@@ -42,7 +42,10 @@ namespace eChess
             client.DefaultRequestHeaders.Add("User-Agent", @"Mozilla/5.0 (Windows NT 10; Win64; x64; rv:60.0) Gecko/20100101 Firefox/60.0");
             result = client.GetAsync("https://api.github.com/repos/SagMeinenNamen/eChess/releases").Result.Content.ReadAsStringAsync().Result;
             latestVersion = GetTagName();
-
+            if(latestVersion.Length > 15)
+            {
+                return false;
+            }
             if (latestVersion != currentVersion)
             {
                 return true;

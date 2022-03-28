@@ -29,7 +29,7 @@ namespace eChess
 {
     public partial class MainWindow : Window
     {
-        readonly string currentVersion = "v1.3";
+        readonly string currentVersion = "v1.5";
         readonly string path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "\\eChess\\";
         readonly Field[,] board = new Field[8, 8];
         readonly BackgroundWorker GameEndChecker = new BackgroundWorker();
@@ -272,13 +272,16 @@ namespace eChess
 
         private async void SendMove_DoWork(object sender, DoWorkEventArgs e)
         {
-            while (await GameController.PostMove(game.GameID, playerGuid, currentPos, newPos) == false) ;
+            if(await GameController.PostMove(game.GameID, playerGuid, currentPos, newPos) == false)
+            {
+                MessageBox.Show("Move could not be posted.");
+            }
         }
 
         private void MakeMove()
         {
             HighlightFields();
-            RemovePiece();
+            CapturePiece();
             SpecialRules();
             MovePiece();
             ResetHints();
@@ -345,7 +348,7 @@ namespace eChess
             {
                 Image image = (Image)this.FindName(slctdBtn.Name + "Image");
                 image.Source = new BitmapImage(new Uri("pack://application:,,,/Resources/WQ.png"));
-                board[newPos.X, newPos.Y].Piece = Piece.WhiteQueen;
+                board[currentPos.X, currentPos.Y].Piece = Piece.WhiteQueen;
                 promotedPieces.Add(slctdBtn.Name);
 
             }
@@ -353,7 +356,7 @@ namespace eChess
             {
                 Image image = (Image)this.FindName(slctdBtn.Name + "Image");
                 image.Source = new BitmapImage(new Uri("pack://application:,,,/Resources/BQ.png"));
-                board[newPos.X, newPos.Y].Piece = Piece.BlackQueen;
+                board[currentPos.X, currentPos.Y].Piece = Piece.BlackQueen;
                 promotedPieces.Add(slctdBtn.Name);
             }
         }
@@ -437,11 +440,14 @@ namespace eChess
                 {
                     if (doubleMoveForEnPassent == true)
                     {
-                        board[field.Point.X, field.Point.Y].DoubleMoved = false;
                         doubleMoveForEnPassent = false;
                     }
                     else
                     {
+                        foreach(var f in board)
+                        {
+                            f.DoubleMoved = false;
+                        }
                         doubleMoveForEnPassent = true;
                     }
                 }
@@ -607,7 +613,7 @@ namespace eChess
             btnsRT.BeginAnimation(RotateTransform.AngleProperty, btnsAnimation);
         }
 
-        private void RemovePiece()
+        private void CapturePiece()
         {
             int y = 1;
             if (whitesTurn == false)
@@ -634,31 +640,40 @@ namespace eChess
                     }
                     else
                     {
-                        RemovePieceWhenEnPassent(newPos, y, button);
+                        CaptureEnPassentPawn(button);
                     }
                 }
             }
         }
 
-        private void RemovePieceWhenEnPassent(Point p, int y, Button button)
+        private void CaptureEnPassentPawn(Button button)
         {
-            Point pawnPos = new Point(-1, -1);
-            foreach (var field in board)
+            int y = 1;
+            if (whitesTurn == false)
             {
-                if (field.DoubleMoved == true)
-                {
-                    pawnPos = field.Point;
-                }
+                y = -1;
             }
-            if (pawnPos.X != -1 && pawnPos.Y != -1)
+            Point pawn = new Point(Grid.GetColumn(button), Grid.GetRow(button));
+            Piece movedPiece = board[currentPos.X, currentPos.Y].Piece;
+            if (movedPiece == Piece.BlackPawn || movedPiece == Piece.WhitePawn)
             {
-                var column = Grid.GetColumn(button);
-                var row = Grid.GetRow(button);
-                if (column == p.X && p.Y + y == row && pawnPos.X == p.X && pawnPos.Y == p.Y + y)
+                Point enemyPawn = Point.Empty;
+                foreach (var field in board)
                 {
-                    //Capture pawn because it is on a different field when en passent happens
-                    button.Visibility = Visibility.Collapsed;
-                    board[column, row].Piece = Piece.Empty;
+                    if (field.DoubleMoved == true)
+                    {
+                        enemyPawn = field.Point;
+                        break;
+                    }
+                }
+                if (enemyPawn != Point.Empty)
+                {
+                    if (pawn.X == newPos.X && newPos.Y + y == pawn.Y && pawn.X == newPos.X && pawn.Y == newPos.Y + y)
+                    {
+                        //Capture pawn because it is on a different field when en passent happens
+                        board[enemyPawn.X, enemyPawn.Y].Piece = Piece.Empty;
+                        button.Visibility = Visibility.Collapsed;
+                    }
                 }
             }
         }
@@ -885,11 +900,11 @@ namespace eChess
 
         void CreateDesktopShortcut()
         {
-            string pathToExe = Directory.GetCurrentDirectory() + "\\" + Process.GetCurrentProcess().ProcessName + ".exe";
-            if (pathToExe == Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "\\eChess\\" + currentVersion + "\\eChess.exe")
+            string pathToExe = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "\\eChess\\" + currentVersion + "\\eChess.exe";
+            if (File.Exists(pathToExe))
             {
                 string desktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-                string shortcutLocation = System.IO.Path.Combine(desktop, "eChess" + ".lnk");
+                string shortcutLocation = System.IO.Path.Combine(desktop, "eChess " + currentVersion + ".lnk");
                 if (!File.Exists(shortcutLocation))
                 {
                     WshInterop.CreateShortcut(shortcutLocation, "eChess", pathToExe, null, null);
@@ -899,10 +914,10 @@ namespace eChess
 
         private void CreateStartMenuShortcut()
         {
-            string pathToExe = Directory.GetCurrentDirectory() + "\\" + Process.GetCurrentProcess().ProcessName + ".exe";
-            if (pathToExe == Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "\\eChess\\" + currentVersion + "\\eChess.exe")
+            string pathToExe = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "\\eChess\\" + currentVersion + "\\eChess.exe";
+            if (File.Exists(pathToExe))
             {
-                string shortcutLocation = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.StartMenu) + "\\Programs\\", "eChess" + ".lnk");
+                string shortcutLocation = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.StartMenu) + "\\Programs\\", "eChess " + currentVersion + ".lnk");
                 if (!File.Exists(shortcutLocation))
                 {
                     WshInterop.CreateShortcut(shortcutLocation, null, pathToExe, null, null);
