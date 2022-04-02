@@ -26,7 +26,7 @@ namespace eChess
     public partial class Updater : Page
     {
         static readonly string path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "\\eChess\\";
-        static HttpClient client = new HttpClient();
+        static readonly HttpClient client = new HttpClient();
         static string result = string.Empty;
         static string latestVersion = string.Empty;
         int progress = 0;

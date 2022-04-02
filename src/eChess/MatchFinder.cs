@@ -51,7 +51,7 @@ namespace eChess
             {
                 while (worker.CancellationPending == false)
                 {
-                    await Task.Delay(100);
+                    await Task.Delay(500);
                     var response = await client.GetAsync("/MatchFinder/CreateGame?playerGuid=" + playerGuid + "&playerName=" + playerName).Result.Content.ReadAsStringAsync();
                     game = JsonConvert.DeserializeObject<GameEntity>(response);
                     if (game != null && game.GameID != Guid.Empty)

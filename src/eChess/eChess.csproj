@@ -128,9 +128,6 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\Capture.wav" />
-  </ItemGroup>
-  <ItemGroup>
     <Resource Include="Resources\BB.png" />
   </ItemGroup>
   <ItemGroup>
@@ -167,9 +164,6 @@
     <Resource Include="Resources\WR.png" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\Move.wav" />
-  </ItemGroup>
-  <ItemGroup>
     <Resource Include="Studio_Project.ico" />
   </ItemGroup>
   <ItemGroup>
@@ -190,6 +184,10 @@
   </ItemGroup>
   <ItemGroup>
     <SplashScreen Include="Resources\SplashScreen.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Resources\Capture.wav" />
+    <Content Include="Resources\Move.wav" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
