@@ -868,7 +868,7 @@ namespace eChess
 
                     if (lastSelectedPiece != null)
                     {
-                        if (currentlyInCheck == true)
+                        if (currentlyInCheck == true && (lastSelectedPiece.Name == "BK" || lastSelectedPiece.Name == "WK"))
                         {
                             lastSelectedPiece.Background = Brushes.Red;
                         }
