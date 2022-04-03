@@ -50,6 +50,15 @@ Download the installer (recommended) or download a release
 - [x] See opponent username
 - [x] Create shortcuts on desktop and windows start menu
 - [x] Auto update the programm when a new version is avaiable
+- [x] Clicking a piece again, defocuses it again
+- [x] After 3.5 minutes of not moving a piece, you abort the game and opponent wins
+- [x] Bring window to front when the game ends
+- [ ] Forfeit button for mulitplayer games and leave button for local games
+- [ ] Warn player when time is about to run out after 3.5 minutes of inactivity
+- [ ] Export games as FEN
+- [ ] Option to hide endscreen to see the game after it ended
+- [ ] Username limitations to ensure proper displaying
+- [ ] Delete old versions automatically
 - [ ] Settings page
 - [ ] Customize sound effects
 - [ ] Customize colors
