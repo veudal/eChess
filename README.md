@@ -55,7 +55,7 @@ Download the installer (recommended) or download a release
 - [x] Bring window to front when the game ends
 - [ ] Forfeit button for mulitplayer games and leave button for local games
 - [ ] Warn player when time is about to run out after 3.5 minutes of inactivity
-- [ ] Export games as FEN
+- [ ] Export games as PGN
 - [ ] Option to hide endscreen to see the game after it ended
 - [ ] Username limitations to ensure proper displaying
 - [ ] Delete old versions automatically
