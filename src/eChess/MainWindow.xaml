@@ -7,7 +7,7 @@
         xmlns:local="clr-namespace:eChess"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         mc:Ignorable="d"
-        x:Uid="MainWindow" Title="eChess" WindowState="Maximized" Height="720" Width="1200"  Background="DarkSlateGray" WindowStartupLocation="CenterScreen">
+        x:Uid="MainWindow" Title="eChess" WindowState="Maximized" Height="720" Width="1200" MinWidth="698" MinHeight="720"  Background="DarkSlateGray" WindowStartupLocation="CenterScreen">
     <Window.Resources>
         <SolidColorBrush x:Key="SelectedBrush" Color="#FF00BFFF" Opacity="0.4"/>
         <SolidColorBrush x:Key="DefaultBrush" Color="Transparent"/>
@@ -20,6 +20,7 @@
                 <DoubleAnimation Storyboard.TargetName="ReasonText" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:3" BeginTime="0:0:0"/>
                 <DoubleAnimation Storyboard.TargetName="ExitBtn" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:3" BeginTime="0:0:0"/>
                 <DoubleAnimation Storyboard.TargetName="NewGameBtn" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:3" BeginTime="0:0:0"/>
+                <DoubleAnimation Storyboard.TargetName="CopyGameBtn" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:3" BeginTime="0:0:0"/>
             </Storyboard>
         </BeginStoryboard>
 
@@ -108,6 +109,16 @@
         </Style>
     </Window.Resources>
     <Grid x:Name="ParentGrid">
+        <Grid.Resources>
+            <ResourceDictionary>
+                <ResourceDictionary.MergedDictionaries>
+                    <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Dark.xaml" />
+                    <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Defaults.xaml" />
+                    <ResourceDictionary Source="pack://application:,,,/MaterialDesignColors;component/Themes/Recommended/Primary/MaterialDesignColor.LightBlue.xaml" />
+                    <ResourceDictionary Source="pack://application:,,,/MaterialDesignColors;component/Themes/Recommended/Accent/MaterialDesignColor.LightBlue.xaml" />
+                </ResourceDictionary.MergedDictionaries>
+            </ResourceDictionary>
+        </Grid.Resources>
         <Grid.Background>
             <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
                 <GradientStop Color="LightSeaGreen"/>
@@ -144,6 +155,20 @@
             <Rectangle Height="2" Fill="DarkSlateBlue" Grid.Column="2" Grid.ColumnSpan="4" Grid.Row="4" VerticalAlignment="Center" Margin="0,30,0,0"/>
             <Button x:Name="ExitBtn" materialDesign:ButtonAssist.CornerRadius="15" Grid.Column="0" Grid.Row="5" Style="{StaticResource MaterialDesignFlatAccentBgButton}" Content="Exit" Height="auto" BorderThickness="0" FontSize="24" FontWeight="Bold" Grid.ColumnSpan="1" Width="auto" Margin="10,10" Background="DarkSlateBlue" Click="ExitBtn_Click"/>
             <Button x:Name="NewGameBtn" materialDesign:ButtonAssist.CornerRadius="15" Grid.Column="7" Grid.Row="5" Style="{StaticResource MaterialDesignFlatAccentBgButton}" Content="New game" Height="auto" BorderThickness="0" FontSize="17"  FontWeight="Bold" Grid.ColumnSpan="2" HorizontalAlignment="Center"  Margin="0,10" Background="DarkSlateBlue" Click="NewGameBtn_Click"/>
+            <!--<CheckBox x:Name="CopyGameBtn" materialDesign:ButtonAssist.CornerRadius="15" Grid.Column="3" Grid.Row="5" Style="{StaticResource MaterialDesignActionDarkCheckBox}" Height="auto" BorderThickness="0" FontSize="17"  FontWeight="Bold" Grid.ColumnSpan="2" HorizontalAlignment="Center"  Margin="0,10" Background="DarkSlateBlue" Click="CopyGameBtn_Click"/>-->
+            <StackPanel Grid.Column="3" Grid.Row="5" Grid.ColumnSpan="2" VerticalAlignment="Center" Margin="0,0,0,10">
+                <StackPanel.Resources>
+                    <ResourceDictionary>
+                        <ResourceDictionary.MergedDictionaries>
+                            <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Dark.xaml" />
+                            <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.ToggleButton.xaml" />
+                            <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Checkbox.xaml" />
+                            <ResourceDictionary Source="pack://application:,,,/MaterialDesignColors;component/Themes/Recommended/Accent/MaterialDesignColor.Lime.xaml" />
+                        </ResourceDictionary.MergedDictionaries>
+                    </ResourceDictionary>
+                </StackPanel.Resources>
+                <CheckBox x:Name="CopyGameBtn" Height="60" Width="60" Background="DarkSlateBlue" Foreground="White" BorderBrush="White" Content="📋" FontSize="26" Style="{StaticResource MaterialDesignActionDarkCheckBox}" Click="CopyGameBtn_Click"/>
+            </StackPanel>
         </Grid>
 
         <Grid x:Name="Menu" Panel.ZIndex="1" Grid.ColumnSpan="11" Grid.RowSpan="9" Visibility="Visible">
@@ -224,8 +249,9 @@
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <TextBlock Visibility="Collapsed" x:Name="OpponentText" Grid.Column="7" VerticalAlignment="Center" Grid.ColumnSpan="2" TextAlignment="Center" Text="Opponent:" Foreground="LightGray" FontStyle="Italic" Grid.Row="3" FontSize="35" />
-            <TextBlock Visibility="Collapsed" x:Name="OpponentName" Grid.ColumnSpan="2" Grid.Row="4" Grid.RowSpan="2" VerticalAlignment="Top" HorizontalAlignment="Center" Grid.Column="7" Foreground="White" Text="Anonymous" FontSize="25" FontWeight="Bold"/>
+            <TextBlock Visibility="Collapsed" x:Name="OpponentText" Grid.Column="7" VerticalAlignment="Center" Grid.ColumnSpan="2" TextAlignment="Center" Text="Opponent:" Foreground="LightGray" FontStyle="Italic" Grid.Row="2" FontSize="35" />
+            <TextBlock Visibility="Collapsed" x:Name="OpponentName" Grid.ColumnSpan="2" Grid.Row="3" Grid.RowSpan="2" VerticalAlignment="Top" HorizontalAlignment="Center" Grid.Column="7" Foreground="White" Text="Anonymous" FontSize="25" FontWeight="Bold"/>
+            <TextBlock Visibility="Collapsed" x:Name="Timer" Grid.Column="7" VerticalAlignment="Center" Grid.ColumnSpan="2" TextAlignment="Center" Text="{Binding Timer}" Foreground="LightGray" FontWeight="Bold" Grid.Row="4" FontSize="50" />
         </Grid>
         <Grid Panel.ZIndex="1" Visibility="Collapsed" x:Name="Grid" Width="{Binding RelativeSource={RelativeSource Self}, Path=ActualHeight}" RenderTransformOrigin="0.5,0.5">
             <Grid.ColumnDefinitions>

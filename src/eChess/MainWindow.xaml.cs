@@ -18,15 +18,16 @@ using Image = System.Windows.Controls.Image;
 using System.Windows.Media.Imaging;
 using eChessServer.Entities;
 using DK.WshRuntime;
-using System.Net.WebSockets;
+using System.Diagnostics;
+using MessageBox = ModernWpf.MessageBox;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace eChess
 {
     public partial class MainWindow : Window
     {
-        readonly string currentVersion = "v1.6";
+        readonly string currentVersion = "v1.7";
+        static readonly int abortTime = 225300;
         readonly string path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "\\eChess\\";
         readonly Field[,] board = new Field[8, 8];
         readonly BackgroundWorker GameEndChecker = new BackgroundWorker();
@@ -42,6 +43,9 @@ namespace eChess
         bool whitesTurn = true;
         bool onlineGame;
         bool waitingForOpponent;
+        bool gameEnded;
+        int moveIndex = 0;
+        string PGN = string.Empty;
         string playerName = string.Empty;
         Guid playerGuid = Guid.NewGuid();
         GameEntity game = new GameEntity();
@@ -52,14 +56,16 @@ namespace eChess
         List<Button> allPieces = new List<Button>();
         Dictionary<Button, Piece> PiecesOfButtons = new Dictionary<Button, Piece>();
         readonly MatchFinder matchFinder = new MatchFinder();
-        readonly System.Timers.Timer abortTimer = new System.Timers.Timer(250000);
-        bool gameEnded;
+        readonly TimerModel timerModel = new TimerModel();
+        System.Windows.Forms.Timer localTimer = new System.Windows.Forms.Timer();
+        DateTime startDateTime;
 
 
         public MainWindow()
         {
             InitializeComponent();
             Directory.CreateDirectory(path);
+            Timer.DataContext = timerModel;
             SetupChessBoard();
             SetUsername();
             Update();
@@ -67,6 +73,58 @@ namespace eChess
             GameEndChecker.DoWork += CheckForGameEnd;
         }
 
+        private void StartLocalTimer()
+        {
+            localTimer.Tick += LocalTimer_Tick;
+            startDateTime = DateTime.Now;
+            localTimer.Start();
+        }
+
+        private void ResetLocalTimer()
+        {
+            localTimer.Stop();
+            localTimer.Dispose();
+            localTimer = new System.Windows.Forms.Timer();
+        }
+
+        private void LocalTimer_Tick(object sender, EventArgs e)
+        {
+            var time = TimeSpan.FromMilliseconds(abortTime) - DateTime.Now.Subtract(startDateTime);
+            if (time.TotalMilliseconds < 1)
+            {
+                timerModel.Timer = "00:00";
+                ResetLocalTimer();
+                Dispatcher.BeginInvoke(new Action(() => GameEndingAnimation(string.Empty, true)));
+            }
+            else
+            {
+                if (time < TimeSpan.FromSeconds(20))
+                {
+                    if (localTimer.Interval != 25)
+                    {
+                        localTimer.Interval = 25;
+                        Dispatcher.BeginInvoke(new Action(() =>
+                        {
+                            Activate();
+                            Topmost = true;
+                            Topmost = false;
+                            Focus();
+                            Timer.Foreground = Brushes.OrangeRed;
+                        }));
+                    }
+                    timerModel.Timer = string.Format("{0:ss\\:ff}", time);
+                }
+                else
+                {
+                    if (localTimer.Interval != 1000)
+                    {
+                        Timer.Foreground = Brushes.LightGray;
+                        localTimer.Interval = 1000;
+                    }
+                    timerModel.Timer = string.Format("{0:mm\\:ss}", time);
+                }
+            }
+        }
 
         private void Update()
         {
@@ -101,9 +159,9 @@ namespace eChess
             Menu.Visibility = Visibility.Collapsed;
             OpponentName.Text = game.OpponentName;
             OpponentName.Visibility = Visibility.Visible;
+            Timer.Visibility = Visibility.Visible;
             OpponentText.Visibility = Visibility.Visible;
             Grid.Visibility = Visibility.Visible;
-            abortTimer.Elapsed += Timeout_Elapsed;
             gameEnded = false;
             EnableAllPieces();
             ResetHints();
@@ -112,12 +170,19 @@ namespace eChess
                 DisableAllPieces();
                 RotateBoardAndPieces();
                 ReceiveMove();
+                ResetVisualTimer();
             }
             else
             {
-                abortTimer.Start();
+                StartLocalTimer();
                 SwitchEnabledPieces(!game.White);
             }
+        }
+
+        private void ResetVisualTimer()
+        {
+            timerModel.Timer = string.Format("{0:mm\\:ss}", TimeSpan.FromMilliseconds(abortTime));
+            Timer.Foreground = Brushes.LightGray;
         }
 
         private void BackgroundMatchFinder_DoWork(object sender, DoWorkEventArgs e)
@@ -150,41 +215,7 @@ namespace eChess
                 }
             }
 
-            Dictionary<Button, Point> keyValuePairs = new Dictionary<Button, Point>()
-            {
-                {BB1, new Point(5,0) },
-                {BB2, new Point(2,0) },
-                {BK, new Point(4,0) },
-                {BN1, new Point(6,0) },
-                {BN2, new Point(1,0) },
-                {BQ, new Point(3,0) },
-                {BR1, new Point(0,0) },
-                {BR2, new Point(7,0) },
-                {BP1, new Point(0,1) },
-                {BP2, new Point(1,1) },
-                {BP3, new Point(2,1) },
-                {BP4, new Point(3,1) },
-                {BP5, new Point(4,1) },
-                {BP6, new Point(5,1) },
-                {BP7, new Point(6,1) },
-                {BP8, new Point(7,1) },
-                {WB1, new Point(2,7) },
-                {WB2, new Point(5,7) },
-                {WK, new Point(4,7) },
-                {WN1, new Point(1,7) },
-                {WN2, new Point(6,7) },
-                {WQ, new Point(3,7) },
-                {WR1, new Point(0,7) },
-                {WR2, new Point(7,7) },
-                {WP1, new Point(0,6) },
-                {WP2, new Point(1,6) },
-                {WP3, new Point(2,6) },
-                {WP4, new Point(3,6) },
-                {WP5, new Point(4,6) },
-                {WP6, new Point(5,6) },
-                {WP7, new Point(6,6) },
-                {WP8, new Point(7,6) },
-            };
+            Dictionary<Button, Point> keyValuePairs = ButtonPieces.GetPositions(BB1, BB2, BK, BN1, BN2, BQ, BR1, BR2, BP1, BP2, BP3, BP4, BP5, BP6, BP7, BP8, WB1, WB2, WK, WN1, WN2, WQ, WR1, WR2, WP1, WP2, WP3, WP4, WP5, WP6, WP7, WP8);
             foreach (var piece in allPieces)
             {
                 Grid.SetColumn(piece, keyValuePairs[piece].X);
@@ -203,41 +234,8 @@ namespace eChess
                     }
                 }
             }
-            PiecesOfButtons = new Dictionary<Button, Piece>
-            {
-                { BB1, Piece.BlackBishop },
-                { BB2, Piece.BlackBishop },
-                { BK, Piece.BlackKing},
-                { BN1, Piece.BlackKnight},
-                { BN2, Piece.BlackKnight},
-                { BQ, Piece.BlackQueen},
-                { BR1, Piece.BlackRook},
-                { BR2, Piece.BlackRook},
-                { BP1, Piece.BlackPawn},
-                { BP2, Piece.BlackPawn},
-                { BP3, Piece.BlackPawn},
-                { BP4, Piece.BlackPawn},
-                { BP5, Piece.BlackPawn},
-                { BP6, Piece.BlackPawn},
-                { BP7, Piece.BlackPawn},
-                { BP8, Piece.BlackPawn},
-                { WB1, Piece.WhiteBishop},
-                { WB2, Piece.WhiteBishop},
-                { WK, Piece.WhiteKing},
-                { WN1, Piece.WhiteKnight},
-                { WN2, Piece.WhiteKnight},
-                { WQ, Piece.WhiteQueen},
-                { WR1, Piece.WhiteRook},
-                { WR2, Piece.WhiteRook},
-                { WP1, Piece.WhitePawn},
-                { WP2, Piece.WhitePawn},
-                { WP3, Piece.WhitePawn},
-                { WP4, Piece.WhitePawn},
-                { WP5, Piece.WhitePawn},
-                { WP6, Piece.WhitePawn},
-                { WP7, Piece.WhitePawn},
-                { WP8, Piece.WhitePawn},
-            };
+            PiecesOfButtons = ButtonPieces.GetPieces(BB1, BB2, BK, BN1, BN2, BQ, BR1, BR2, BP1, BP2, BP3, BP4, BP5, BP6, BP7, BP8, WB1, WB2, WK, WN1, WN2, WQ, WR1, WR2, WP1, WP2, WP3, WP4, WP5, WP6, WP7, WP8);
+
         }
 
 
@@ -261,22 +259,32 @@ namespace eChess
         {
             Button clickedBtn = (Button)sender;
             newPos = new Point(Grid.GetColumn(clickedBtn), Grid.GetRow(clickedBtn));
-            PlaySound();
             MakeMove();
+            PlaySound();
             if (onlineGame == true)
             {
                 lastSelectedPiece = new Button();
-                abortTimer.Stop();
+                ResetVisualTimer();
+                ResetLocalTimer();
                 PostMove();
                 ReceiveMove();
                 EnableOrDisableOwnPieces(false);
             }
             else
             {
+                RotateBoardAndPieces();
                 SwitchEnabledPieces(whitesTurn);
             }
             whitesTurn = !whitesTurn;
             GameEndChecker.RunWorkerAsync();
+        }
+
+        private void PlaySound_DoWork(object sender, DoWorkEventArgs e)
+        {
+            if (board[newPos.X, newPos.Y].Piece != Piece.Empty)
+                PlaySound(Properties.Resources.Capture);
+            else
+                PlaySound(Properties.Resources.Move);
         }
 
         private void EnableOrDisableOwnPieces(bool enabled)
@@ -337,39 +345,39 @@ namespace eChess
             waitingForOpponent = true;
             receiveMove = new BackgroundWorker();
             receiveMove.DoWork += ReceiveMove_DoWork;
-            receiveMove.RunWorkerAsync();
+            receiveMove.RunWorkerAsync(game.GameID);
             receiveMove.RunWorkerCompleted += ReceiveMove_RunWorkerCompleted;
         }
 
-        private void ReceiveMove_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        private void ReceiveMove_RunWorkerCompleted(Object sender, RunWorkerCompletedEventArgs e)
         {
-            if (opponentsMove.currentPos.X == 44 && opponentsMove.newPos.X == 44)
+            if ((Guid)e.Result == game.GameID)
             {
-                if (gameEnded == false)
+                if (opponentsMove.currentPos.X == 44 && opponentsMove.newPos.X == 44)
                 {
-                    GameEndingAnimation(string.Empty, true);
+                    if (gameEnded == false)
+                    {
+                        GameEndingAnimation(string.Empty, true);
+                    }
                 }
-            }
-            else if(gameEnded == false)
-            {
-                abortTimer.Start();
-                waitingForOpponent = false;
-                newPos = opponentsMove.newPos;
-                currentPos = opponentsMove.currentPos;
-                slctdBtn = GetButton();
-                PlaySound();
-                MakeMove();
-                EnableOrDisableOwnPieces(true);
-                whitesTurn = !whitesTurn;
-                GameEndChecker.RunWorkerAsync();
+                else if (gameEnded == false)
+                {
+                    StartLocalTimer();
+                    waitingForOpponent = false;
+                    newPos = opponentsMove.newPos;
+                    currentPos = opponentsMove.currentPos;
+                    slctdBtn = GetButton();
+
+                    PlaySound();
+                    MakeMove();
+                    EnableOrDisableOwnPieces(true);
+                    whitesTurn = !whitesTurn;
+                    GameEndChecker.RunWorkerAsync();
+                }
             }
         }
 
-        private void Timeout_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
-        {
-            Dispatcher.BeginInvoke(new Action(() => GameEndingAnimation(string.Empty, true)));
-            abortTimer.Stop();
-        }
+
 
         private Button GetButton()
         {
@@ -396,6 +404,7 @@ namespace eChess
 
         private void ReceiveMove_DoWork(object sender, DoWorkEventArgs e)
         {
+            e.Result = e.Argument;
             opponentsMove = GameController.ReceiveMove(game.GameID, playerGuid).Result;
         }
 
@@ -416,15 +425,12 @@ namespace eChess
 
         private void MakeMove()
         {
+            PortableGameNotation.PGN_Writer(board, currentPos, newPos, whitesTurn, ref moveIndex, ref PGN);
             HighlightFields();
             CapturePiece();
             SpecialRules();
             MovePiece();
             ResetHints();
-            if (onlineGame == false)
-            {
-                RotateBoardAndPieces();
-            }
         }
 
         private void SpecialRules()
@@ -443,6 +449,7 @@ namespace eChess
                     //Castle short
                     if (currentPos.X < newPos.X && newPos.X - currentPos.X == 2)
                     {
+                        PortableGameNotation.PGN_Castling("O-O ", ref PGN);
                         Grid.SetColumn(WR2, 5);
                         board[newPos.X - 1, newPos.Y].Piece = Piece.WhiteRook;
                         board[newPos.X + 1, newPos.Y].Piece = Piece.Empty;
@@ -450,6 +457,7 @@ namespace eChess
                     //Castle long
                     else if (currentPos.X > newPos.X && currentPos.X - newPos.X == 2)
                     {
+                        PortableGameNotation.PGN_Castling("O-O-O ", ref PGN);
                         Grid.SetColumn(WR1, 3);
                         board[newPos.X + 1, newPos.Y].Piece = Piece.WhiteRook;
                         board[newPos.X - 2, newPos.Y].Piece = Piece.Empty;
@@ -463,6 +471,7 @@ namespace eChess
                     //Castle short
                     if (currentPos.X < newPos.X && newPos.X - currentPos.X == 2)
                     {
+                        PortableGameNotation.PGN_Castling("O-O ", ref PGN);
                         Grid.SetColumn(BR2, 5);
                         board[newPos.X - 1, newPos.Y].Piece = Piece.BlackRook;
                         board[newPos.X + 1, newPos.Y].Piece = Piece.Empty;
@@ -470,6 +479,7 @@ namespace eChess
                     //Castle long
                     else if (currentPos.X > newPos.X && currentPos.X - newPos.X == 2)
                     {
+                        PortableGameNotation.PGN_Castling("O-O-O ", ref PGN);
                         Grid.SetColumn(BR1, 3);
                         board[newPos.X + 1, newPos.Y].Piece = Piece.BlackRook;
                         board[newPos.X - 2, newPos.Y].Piece = Piece.Empty;
@@ -507,6 +517,7 @@ namespace eChess
             board[newPos.X, newPos.Y].Piece = board[currentPos.X, currentPos.Y].Piece;
             board[currentPos.X, currentPos.Y].Piece = Piece.Empty;
         }
+
 
         private static Piece SetPieceOnField(int column, int row)
         {
@@ -564,10 +575,9 @@ namespace eChess
         }
         private void PlaySound()
         {
-            if (board[newPos.X, newPos.Y].Piece != Piece.Empty)
-                PlaySound(Properties.Resources.Capture);
-            else
-                PlaySound(Properties.Resources.Move);
+            BackgroundWorker playSound = new BackgroundWorker();
+            playSound.DoWork += PlaySound_DoWork;
+            playSound.RunWorkerAsync();
         }
 
         private void EnPassent()
@@ -678,7 +688,10 @@ namespace eChess
         private void GameEndingAnimation(string player, bool aborted)
         {
             gameEnded = true;
+            RetrievePGN();
             DisableAllPieces();
+            ResetLocalTimer();
+
             Grid.Effect = new BlurEffect();
             OpponentName.Visibility = Visibility.Collapsed;
             OpponentText.Visibility = Visibility.Collapsed;
@@ -729,6 +742,25 @@ namespace eChess
             sb.Storyboard.Begin();
         }
 
+        private void RetrievePGN()
+        {
+            try
+            {
+                if (onlineGame == true)
+                {
+                    string pgn = GameController.GetPGN(game.GameID).Result;
+                    if (pgn.StartsWith("[Event"))
+                    {
+                        PGN = pgn;
+                    }
+                }
+            }
+            catch
+            {
+
+            }
+        }
+
         private void Storyboard_Completed(object sender, EventArgs e)
         {
             EndScreenGrid.BeginAnimation(Grid.WidthProperty, null);
@@ -769,13 +801,13 @@ namespace eChess
             DoubleAnimation btnsAnimation;
             if (whitesTurn)
             {
-                btnsAnimation = new DoubleAnimation(0, 180, new Duration(TimeSpan.FromSeconds(0.5)));
-                gridAnimation = new DoubleAnimation(0, 180, new Duration(TimeSpan.FromSeconds(0.5)));
+                btnsAnimation = new DoubleAnimation(0, 180, new Duration(TimeSpan.FromSeconds(0.7)));
+                gridAnimation = new DoubleAnimation(0, 180, new Duration(TimeSpan.FromSeconds(0.7)));
             }
             else
             {
-                btnsAnimation = new DoubleAnimation(180, 0, new Duration(TimeSpan.FromSeconds(0.5)));
-                gridAnimation = new DoubleAnimation(180, 0, new Duration(TimeSpan.FromSeconds(0.5)));
+                btnsAnimation = new DoubleAnimation(180, 0, new Duration(TimeSpan.FromSeconds(0.7)));
+                gridAnimation = new DoubleAnimation(180, 0, new Duration(TimeSpan.FromSeconds(0.7)));
             }
 
 
@@ -930,7 +962,13 @@ namespace eChess
             onlineGame = false;
             waitingForOpponent = false;
             markedFields.Clear();
+            PGN = string.Empty;
+            moveIndex = 0;
             game = new GameEntity();
+            Timer.Visibility = Visibility.Collapsed;
+            CopyGameBtn.Content = "📋";
+            CopyGameBtn.IsChecked = false;
+            CopyGameBtn.IsEnabled = true;
         }
 
         private void ResetHighlights()
@@ -955,10 +993,52 @@ namespace eChess
 
         private void NameTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (!string.IsNullOrWhiteSpace(NameTextBox.Text) && NameTextBox.Text != "Anonymous")
+            if (NameTextBox.IsFocused == true)
             {
-                Directory.CreateDirectory(path);
-                File.WriteAllText(path + "username", NameTextBox.Text);
+                string name = NameTextBox.Text;
+                if (CharactersAllowed(name))
+                {
+                    playerName = name;
+                    Directory.CreateDirectory(path);
+                    File.WriteAllText(path + "username", name);
+                }
+                else
+                {
+                    NameTextBox.Text = playerName;
+                    NameTextBox.CaretIndex = name.Length;
+                }
+            }
+        }
+
+        private bool CharactersAllowed(string name)
+        {
+            string allowableLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890-_.";
+            foreach (char c in name)
+            {
+                if (!allowableLetters.Contains(c.ToString()))
+                    return false;
+            }
+            return true;
+
+        }
+
+        private string IsValidName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                return "Your username cannot be empty.";
+            }
+            else if (name.Length > 15)
+            {
+                return "Your username must not exceed 15 characters.";
+            }
+            else if (name.Length < 3)
+            {
+                return "Your username must consist of at least 3 characters.";
+            }
+            else
+            {
+                return "Valid";
             }
         }
 
@@ -966,12 +1046,20 @@ namespace eChess
         {
             if (ProgressRing.Visibility != Visibility.Visible)
             {
-                onlineGame = true;
                 playerName = NameTextBox.Text;
-                StartOnlineGame.Background = Brushes.Red;
-                StartOnlineGame.Content = "Cancel search";
-                ProgressRing.Visibility = Visibility.Visible;
-                StartBackgroundworker();
+                string result = IsValidName(playerName);
+                if (result == "Valid")
+                {
+                    onlineGame = true;
+                    StartOnlineGame.Background = Brushes.Red;
+                    StartOnlineGame.Content = "Cancel search";
+                    ProgressRing.Visibility = Visibility.Visible;
+                    StartBackgroundworker();
+                }
+                else
+                {
+                    MessageBox.Show(result, "Username is not valid", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
             }
             else
             {
@@ -1044,6 +1132,38 @@ namespace eChess
                     WshInterop.CreateShortcut(shortcutLocation, null, pathToExe, null, null);
                 }
             }
+        }
+
+        private void CopyGameBtn_Click(object sender, RoutedEventArgs e)
+        {
+            BackgroundWorker handleClick = new BackgroundWorker();
+            handleClick.DoWork += HandleClick_DoWork;
+            handleClick.RunWorkerCompleted += HandleClick_RunWorkerCompleted;
+            handleClick.RunWorkerAsync();
+        }
+
+        private void HandleClick_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            var result = MessageBox.Show("Do you want to open lichess.org to import your game?", "Portable game notation was copied", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (result == MessageBoxResult.Yes)
+            {
+                Process.Start("https://lichess.org/paste");
+            }
+        }
+
+        private void HandleClick_DoWork(object sender, DoWorkEventArgs e)
+        {
+            Thread.Sleep(500);
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                CopyGameBtn.IsEnabled = false;
+                string serverPGN = GameController.GetPGN(game.GameID).Result;
+                if (serverPGN.Length > 100)
+                {
+                    PGN = serverPGN;
+                }
+                Clipboard.SetText(PGN);
+            }));
         }
     }
 }
