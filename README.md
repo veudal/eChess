@@ -53,12 +53,12 @@ Download the installer (recommended) or download a release
 - [x] Clicking a piece again, defocuses it again
 - [x] After 3.5 minutes of not moving a piece, you abort the game and opponent wins
 - [x] Bring window to front when the game ends
+- [x] Warn player when time is about to run out after 3.5 minutes of inactivity
+- [x] Export games as PGN
+- [x] Username limitations to ensure proper displaying
 - [ ] Forfeit button for mulitplayer games and leave button for local games
-- [ ] Warn player when time is about to run out after 3.5 minutes of inactivity
-- [ ] Export games as PGN
-- [ ] Option to hide endscreen to see the game after it ended
-- [ ] Username limitations to ensure proper displaying
 - [ ] Delete old versions automatically
+- [ ] Option to hide endscreen to see the game after it ended
 - [ ] Settings page
 - [ ] Customize sound effects
 - [ ] Customize colors
