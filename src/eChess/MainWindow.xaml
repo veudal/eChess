@@ -155,20 +155,7 @@
             <Rectangle Height="2" Fill="DarkSlateBlue" Grid.Column="2" Grid.ColumnSpan="4" Grid.Row="4" VerticalAlignment="Center" Margin="0,30,0,0"/>
             <Button x:Name="ExitBtn" materialDesign:ButtonAssist.CornerRadius="15" Grid.Column="0" Grid.Row="5" Style="{StaticResource MaterialDesignFlatAccentBgButton}" Content="Exit" Height="auto" BorderThickness="0" FontSize="24" FontWeight="Bold" Grid.ColumnSpan="1" Width="auto" Margin="10,10" Background="DarkSlateBlue" Click="ExitBtn_Click"/>
             <Button x:Name="NewGameBtn" materialDesign:ButtonAssist.CornerRadius="15" Grid.Column="7" Grid.Row="5" Style="{StaticResource MaterialDesignFlatAccentBgButton}" Content="New game" Height="auto" BorderThickness="0" FontSize="17"  FontWeight="Bold" Grid.ColumnSpan="2" HorizontalAlignment="Center"  Margin="0,10" Background="DarkSlateBlue" Click="NewGameBtn_Click"/>
-            <!--<CheckBox x:Name="CopyGameBtn" materialDesign:ButtonAssist.CornerRadius="15" Grid.Column="3" Grid.Row="5" Style="{StaticResource MaterialDesignActionDarkCheckBox}" Height="auto" BorderThickness="0" FontSize="17"  FontWeight="Bold" Grid.ColumnSpan="2" HorizontalAlignment="Center"  Margin="0,10" Background="DarkSlateBlue" Click="CopyGameBtn_Click"/>-->
-            <StackPanel Grid.Column="3" Grid.Row="5" Grid.ColumnSpan="2" VerticalAlignment="Center" Margin="0,0,0,10">
-                <StackPanel.Resources>
-                    <ResourceDictionary>
-                        <ResourceDictionary.MergedDictionaries>
-                            <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Dark.xaml" />
-                            <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.ToggleButton.xaml" />
-                            <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Checkbox.xaml" />
-                            <ResourceDictionary Source="pack://application:,,,/MaterialDesignColors;component/Themes/Recommended/Accent/MaterialDesignColor.Lime.xaml" />
-                        </ResourceDictionary.MergedDictionaries>
-                    </ResourceDictionary>
-                </StackPanel.Resources>
-                <CheckBox x:Name="CopyGameBtn" Height="60" Width="60" Background="DarkSlateBlue" Foreground="White" BorderBrush="White" Content="📋" FontSize="26" Style="{StaticResource MaterialDesignActionDarkCheckBox}" Click="CopyGameBtn_Click"/>
-            </StackPanel>
+            <CheckBox Grid.Column="3" Grid.Row="5" Grid.ColumnSpan="2" VerticalAlignment="Center" Margin="0,0,0,10" x:Name="CopyGameBtn" Height="60" Width="60" Background="DarkSlateBlue" Foreground="White" BorderBrush="White" Content="📋" FontSize="26" Style="{StaticResource MaterialDesignActionDarkCheckBox}" Click="CopyGameBtn_Click"/>
         </Grid>
 
         <Grid x:Name="Menu" Panel.ZIndex="1" Grid.ColumnSpan="11" Grid.RowSpan="9" Visibility="Visible">
