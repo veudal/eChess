@@ -26,7 +26,7 @@ namespace eChess
 {
     public partial class MainWindow : Window
     {
-        readonly string currentVersion = "v1.7";
+        readonly string currentVersion = "v1.8";
         static readonly int abortTime = 225300;
         readonly string path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "\\eChess\\";
         readonly Field[,] board = new Field[8, 8];
@@ -69,7 +69,8 @@ namespace eChess
             SetupChessBoard();
             SetUsername();
             Update();
-            CreateShortcuts();
+            DeleteOldFilesAndShortcuts();
+            CreateNewShortcuts();
             GameEndChecker.DoWork += CheckForGameEnd;
         }
 
@@ -93,8 +94,8 @@ namespace eChess
             if (time.TotalMilliseconds < 1)
             {
                 timerModel.Timer = "00:00";
-                ResetLocalTimer();
-                Dispatcher.BeginInvoke(new Action(() => GameEndingAnimation(string.Empty, true)));
+                Thread handleTimeForfeit = new Thread(HandleTimeForfeit);
+                handleTimeForfeit.Start();
             }
             else
             {
@@ -126,10 +127,17 @@ namespace eChess
             }
         }
 
+        private void HandleTimeForfeit()
+        {
+            ResetLocalTimer();
+            Dispatcher.BeginInvoke(new Action(() => GameEndingAnimation(string.Empty, true)));
+        }
+
+
         private void Update()
         {
             Updater updater = new Updater();
-            if (updater.NewVersionAvailable(currentVersion) == true)
+            if (updater.NewVersionAvailable(currentVersion) == false)
             {
                 UpdatePage.Content = updater;
                 UpdatePage.Visibility = Visibility.Visible;
@@ -259,11 +267,12 @@ namespace eChess
         {
             Button clickedBtn = (Button)sender;
             newPos = new Point(Grid.GetColumn(clickedBtn), Grid.GetRow(clickedBtn));
-            MakeMove();
             PlaySound();
-            if (onlineGame == true)
+            MakeMove();
+            if (onlineGame)
             {
                 lastSelectedPiece = new Button();
+                ShowSandClock();
                 ResetVisualTimer();
                 ResetLocalTimer();
                 PostMove();
@@ -277,6 +286,31 @@ namespace eChess
             }
             whitesTurn = !whitesTurn;
             GameEndChecker.RunWorkerAsync();
+        }
+
+        private void ShowSandClock()
+        {
+            SandClock.Visibility = Visibility.Visible;
+            BeginStoryboard sb = this.FindResource("FadeIn") as BeginStoryboard;
+            sb.Storyboard.Completed += FadeInSb_Completed;
+            sb.Storyboard.Begin();
+        }
+
+        private void FadeInSb_Completed(object sender, EventArgs e)
+        {
+            SandClock.Visibility = Visibility.Visible;
+        }
+
+        private void HideSandClock()
+        {
+            BeginStoryboard sb = this.FindResource("FadeOut") as BeginStoryboard;
+            sb.Storyboard.Completed += FadeOutSb_Completed;
+            sb.Storyboard.Begin();
+        }
+
+        private void FadeOutSb_Completed(object sender, EventArgs e)
+        {
+            SandClock.Visibility = Visibility.Collapsed;
         }
 
         private void PlaySound_DoWork(object sender, DoWorkEventArgs e)
@@ -343,6 +377,7 @@ namespace eChess
         private void ReceiveMove()
         {
             waitingForOpponent = true;
+            ShowSandClock();
             receiveMove = new BackgroundWorker();
             receiveMove.DoWork += ReceiveMove_DoWork;
             receiveMove.RunWorkerAsync(game.GameID);
@@ -351,6 +386,7 @@ namespace eChess
 
         private void ReceiveMove_RunWorkerCompleted(Object sender, RunWorkerCompletedEventArgs e)
         {
+            HideSandClock();
             if ((Guid)e.Result == game.GameID)
             {
                 if (opponentsMove.currentPos.X == 44 && opponentsMove.newPos.X == 44)
@@ -693,6 +729,7 @@ namespace eChess
             ResetLocalTimer();
 
             Grid.Effect = new BlurEffect();
+            HideSandClock();
             OpponentName.Visibility = Visibility.Collapsed;
             OpponentText.Visibility = Visibility.Collapsed;
             if (aborted == false)
@@ -1101,15 +1138,84 @@ namespace eChess
         }
 
 
-        void CreateShortcuts()
+        private void DeleteOldFilesAndShortcuts()
+        {
+            DeleteOldVersions();
+            DeleteOldDesktopShortcuts();
+            DeleteOldStartMenuShortcut();
+        }
+
+        private void DeleteOldVersions()
+        {
+            var directories = Directory.GetDirectories(path);
+            foreach (string directory in directories)
+            {
+                string name = directory.Replace(path, "");
+                if (name.StartsWith("v") && name.Contains(".") && name != currentVersion)
+                {
+                    try
+                    {
+                        Directory.Delete(directory, true);
+                    }
+                    catch
+                    {
+
+                    }
+                }
+            }
+        }
+
+        private void DeleteOldDesktopShortcuts()
+        {
+            string desktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            var files = Directory.GetFiles(desktop);
+            foreach (string file in files)
+            {
+                string name = System.IO.Path.GetFileName(file);
+                if (name.Contains("eChess v") && !name.Contains(currentVersion))
+                {
+                    try
+                    {
+                        File.Delete(file);
+                    }
+                    catch
+                    {
+
+                    }
+                }
+            }
+        }
+
+        private void DeleteOldStartMenuShortcut()
+        {
+            string startMenuFolder = Environment.GetFolderPath(Environment.SpecialFolder.StartMenu) + "\\Programs\\";
+            var files = Directory.GetFiles(startMenuFolder);
+            foreach (string file in files)
+            {
+                string name = System.IO.Path.GetFileName(file);
+                if (name.Contains("eChess v") && !name.Contains(currentVersion))
+                {
+                    try
+                    {
+                        File.Delete(file);
+                    }
+                    catch
+                    {
+
+                    }
+                }
+            }
+        }
+
+        private void CreateNewShortcuts()
         {
             CreateDesktopShortcut();
             CreateStartMenuShortcut();
         }
 
-        void CreateDesktopShortcut()
+        private void CreateDesktopShortcut()
         {
-            string pathToExe = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "\\eChess\\" + currentVersion + "\\eChess.exe";
+            string pathToExe = path + currentVersion + "\\eChess.exe";
             if (File.Exists(pathToExe))
             {
                 string desktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
@@ -1123,7 +1229,7 @@ namespace eChess
 
         private void CreateStartMenuShortcut()
         {
-            string pathToExe = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "\\eChess\\" + currentVersion + "\\eChess.exe";
+            string pathToExe = path + currentVersion + "\\eChess.exe";
             if (File.Exists(pathToExe))
             {
                 string shortcutLocation = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.StartMenu) + "\\Programs\\", "eChess " + currentVersion + ".lnk");

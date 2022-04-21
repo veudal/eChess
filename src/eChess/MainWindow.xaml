@@ -6,6 +6,7 @@
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
         xmlns:local="clr-namespace:eChess"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:gif="https://github.com/XamlAnimatedGif/XamlAnimatedGif"
         mc:Ignorable="d"
         x:Uid="MainWindow" Title="eChess" WindowState="Maximized" Height="720" Width="1200" MinWidth="698" MinHeight="720"  Background="DarkSlateGray" WindowStartupLocation="CenterScreen">
     <Window.Resources>
@@ -23,7 +24,16 @@
                 <DoubleAnimation Storyboard.TargetName="CopyGameBtn" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:3" BeginTime="0:0:0"/>
             </Storyboard>
         </BeginStoryboard>
-
+        <BeginStoryboard x:Key="FadeIn">
+            <Storyboard>
+                <DoubleAnimation Storyboard.TargetName="SandClock" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:1" BeginTime="0:0:0"/>
+            </Storyboard>
+        </BeginStoryboard>
+        <BeginStoryboard x:Key="FadeOut">
+            <Storyboard>
+                <DoubleAnimation Storyboard.TargetName="SandClock" Storyboard.TargetProperty="Opacity" From="1" To="0" Duration="0:0:1" BeginTime="0:0:0"/>
+            </Storyboard>
+        </BeginStoryboard>
         <Style x:Key="ButtonRoundedCorner" TargetType="Button">
             <Setter Property="Background" Value="{StaticResource DefaultBrush}"/>
             <Setter Property="Foreground" Value="White" />
@@ -213,8 +223,7 @@
             <ProgressBar x:Name="ProgressRing" Style="{StaticResource MaterialDesignCircularProgressBar}" Grid.Row="6" Grid.Column="5" Height="auto" Width="auto" VerticalAlignment="Center" IsIndeterminate="True" Foreground="AliceBlue" Visibility="Collapsed"/>
             <TextBox x:Name="NameTextBox" Grid.ColumnSpan="3" materialDesign:HintAssist.Hint="Username" Background="Transparent" Style="{StaticResource MaterialDesignFloatingHintTextBox}" Grid.Row="7" Grid.RowSpan="2" VerticalAlignment="Center" HorizontalAlignment="Center" Grid.Column="8" Foreground="White" Text="Anonymous" BorderThickness="0" FontSize="35" TextAlignment="Left" TextChanged="NameTextBox_TextChanged"/>
         </Grid>
-
-        <Grid Panel.ZIndex="1" Visibility="Visible" x:Name="Grid2">
+        <Grid Panel.ZIndex="1" Visibility="Visible">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
@@ -238,7 +247,32 @@
             </Grid.RowDefinitions>
             <TextBlock Visibility="Collapsed" x:Name="OpponentText" Grid.Column="7" VerticalAlignment="Center" Grid.ColumnSpan="2" TextAlignment="Center" Text="Opponent:" Foreground="LightGray" FontStyle="Italic" Grid.Row="2" FontSize="35" />
             <TextBlock Visibility="Collapsed" x:Name="OpponentName" Grid.ColumnSpan="2" Grid.Row="3" Grid.RowSpan="2" VerticalAlignment="Top" HorizontalAlignment="Center" Grid.Column="7" Foreground="White" Text="Anonymous" FontSize="25" FontWeight="Bold"/>
-            <TextBlock Visibility="Collapsed" x:Name="Timer" Grid.Column="7" VerticalAlignment="Center" Grid.ColumnSpan="2" TextAlignment="Center" Text="{Binding Timer}" Foreground="LightGray" FontWeight="Bold" Grid.Row="4" FontSize="50" />
+            <TextBlock Visibility="Visible" x:Name="Timer" Grid.Column="7" VerticalAlignment="Center" Grid.ColumnSpan="2" TextAlignment="Center" Text="{Binding Timer}" Foreground="LightGray" FontWeight="Bold" Grid.Row="4" FontSize="50" />
+            <Grid x:Name="SandClock" Visibility="Collapsed" Margin="30,0,0,0" Grid.Row="1" Grid.Column="0" Grid.RowSpan="5" Grid.ColumnSpan="3" >
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Image gif:AnimationBehavior.SourceUri="Resources/SandClock.gif" gif:AnimationBehavior.RepeatBehavior="Forever" Grid.Column="0" Grid.Row="1" Grid.RowSpan="6" Grid.ColumnSpan="6"/>
+                <TextBlock Text="Waiting for opponent" Foreground="White" FontSize="18" FontStyle="Italic" TextAlignment="Center" Margin="0,0,20,0" VerticalAlignment="Bottom" Grid.Row="5" Grid.ColumnSpan="6"/>
+            </Grid>
         </Grid>
         <Grid Panel.ZIndex="1" Visibility="Collapsed" x:Name="Grid" Width="{Binding RelativeSource={RelativeSource Self}, Path=ActualHeight}" RenderTransformOrigin="0.5,0.5">
             <Grid.ColumnDefinitions>

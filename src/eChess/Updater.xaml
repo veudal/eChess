@@ -19,7 +19,7 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="20"/>
+            <RowDefinition Height="30"/>
         </Grid.RowDefinitions>
         <Grid.Background>
             <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
@@ -30,6 +30,6 @@
         </Grid.Background>
         <TextBlock TextAlignment="Center" VerticalAlignment="Bottom" Text="eChess Update" Foreground="White" FontSize="45" FontStyle="Italic" FontWeight="Bold" Grid.RowSpan="3" Background="Transparent"/>
         <TextBlock Grid.Row="8" Foreground="White" FontSize="20" Text="Downloading..." TextAlignment="Center" VerticalAlignment="Center"/>
-        <ProgressBar x:Name="DownloadProgress" Grid.Row="9" Value="{Binding Percent}" Height="auto" Background="Transparent" Foreground="DarkSlateBlue" BorderThickness="0"/>
+        <ProgressBar x:Name="DownloadProgress" Grid.Row="9" Value="{Binding Percent}"  Background="Transparent" VerticalAlignment="Stretch" Foreground="White" BorderThickness="0"/>
     </Grid>
 </Page>

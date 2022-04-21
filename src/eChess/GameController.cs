@@ -27,7 +27,7 @@ namespace eChess
         {
             try
             {
-                var response = await client.GetAsync("/Game/PostMove?gameID=" + gameID + "&playerGuid=" + playerGuid + "&currentPosX=" + currentPos.X + "&currentPosY=" + currentPos.Y + "&newPosX=" + newPos.X + "&newPosY=" + newPos.Y);
+                var response = await client.PostAsync("/Game/PostMove?gameID=" + gameID + "&playerGuid=" + playerGuid + "&currentPosX=" + currentPos.X + "&currentPosY=" + currentPos.Y + "&newPosX=" + newPos.X + "&newPosY=" + newPos.Y, null);
                 var content = response.Content.ReadAsStringAsync().Result;
                 if (content != "true")
                 {
