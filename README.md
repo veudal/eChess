@@ -56,8 +56,9 @@ Download the installer (recommended) or download a release
 - [x] Warn player when time is about to run out after 3.5 minutes of inactivity
 - [x] Export games as PGN
 - [x] Username limitations to ensure proper displaying
+- [x] Delete old versions automatically
+- [x] Add sand clock gif when waiting for the opponent 
 - [ ] Forfeit button for mulitplayer games and leave button for local games
-- [ ] Delete old versions automatically
 - [ ] Option to hide endscreen to see the game after it ended
 - [ ] Settings page
 - [ ] Customize sound effects
