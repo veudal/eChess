@@ -137,7 +137,7 @@ namespace eChess
         private void Update()
         {
             Updater updater = new Updater();
-            if (updater.NewVersionAvailable(currentVersion) == false)
+            if (updater.NewVersionAvailable(currentVersion) == true)
             {
                 UpdatePage.Content = updater;
                 UpdatePage.Visibility = Visibility.Visible;
