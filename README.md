@@ -1,6 +1,6 @@
 # eChess
 
-Offline chess for two players inspired by lichess
+Online and offline (local) chess for two players inspired by lichess
 #
 ![Contributors](https://img.shields.io/github/contributors/SagMeinenNamen/eChess.svg?style=for-the-badge)
 ![Forks](https://img.shields.io/github/forks/SagMeinenNamen/eChess.svg?style=for-the-badge)
