@@ -82,5 +82,24 @@ namespace eChess
             }
             return "Failed to retrieve PGN";
         }
+
+        public static async Task<string> GetGameStatus(Guid gameID)
+        {
+            try
+            {
+                HttpClient _client = new HttpClient()
+                {
+                    BaseAddress = new Uri(Constants.ApiBaseAddress),
+                    Timeout = TimeSpan.FromMilliseconds(5000)
+                };
+                var response = await _client.GetAsync("/Games/GetGameStatus?gameID=" + gameID).Result.Content.ReadAsStringAsync();
+                return response;
+            }
+            catch
+            {
+
+            }
+            return "false";
+        }
     }
 }

@@ -39,21 +39,21 @@ namespace eChess
 
         public bool NewVersionAvailable(string currentVersion)
         {
-            client.DefaultRequestHeaders.Add("User-Agent", @"Mozilla/5.0 (Windows NT 10; Win64; x64; rv:60.0) Gecko/20100101 Firefox/60.0");
-            result = client.GetAsync("https://api.github.com/repos/SagMeinenNamen/eChess/releases").Result.Content.ReadAsStringAsync().Result;
-            latestVersion = GetTagName();
-            if(latestVersion.Length > 15)
+            try
             {
-                return false;
+                client.DefaultRequestHeaders.Add("User-Agent", @"Mozilla/5.0 (Windows NT 10; Win64; x64; rv:60.0) Gecko/20100101 Firefox/60.0");
+                result = client.GetAsync("https://api.github.com/repos/SagMeinenNamen/eChess/releases").Result.Content.ReadAsStringAsync().Result;
+                latestVersion = GetTagName();
+                if (latestVersion != currentVersion && latestVersion.Length < 16)
+                {
+                    return true;
+                }
             }
-            if (latestVersion != currentVersion)
+            catch
             {
-                return true;
+
             }
-            else
-            {
-                return false;
-            }
+            return false;
         }
 
         public void DownloadUpate()
@@ -68,7 +68,7 @@ namespace eChess
                     wc.DownloadFileCompleted += Wc_DownloadFileCompleted;
                     wc.DownloadProgressChanged += Wc_DownloadProgressChanged;
                     wc.DownloadFileAsync(new Uri(URL), path + latestVersion + "\\eChess.exe");
-                 
+
                 }
                 catch (Exception e)
                 {
@@ -77,8 +77,21 @@ namespace eChess
             }
             else
             {
+                StartLatestVersion();
+            }
+        }
+
+        private void StartLatestVersion()
+        {
+            try
+            {
                 Process.Start(path + latestVersion + "\\eChess.exe");
                 Environment.Exit(0);
+            }
+            catch
+            {
+                File.Delete(path + latestVersion + "\\eChess.exe");
+                this.Visibility = Visibility.Collapsed;
             }
         }
 
@@ -92,10 +105,9 @@ namespace eChess
             }
         }
 
-        private static void Wc_DownloadFileCompleted(object sender, System.ComponentModel.AsyncCompletedEventArgs e)
+        private void Wc_DownloadFileCompleted(object sender, System.ComponentModel.AsyncCompletedEventArgs e)
         {
-            Process.Start(path + latestVersion + "\\eChess.exe");
-            Environment.Exit(0);
+            StartLatestVersion();
         }
 
         static string GetDownloadURL()

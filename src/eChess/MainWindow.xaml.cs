@@ -21,12 +21,16 @@ using DK.WshRuntime;
 using System.Diagnostics;
 using MessageBox = ModernWpf.MessageBox;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Configuration;
+using eChess.Properties;
+using Windows.UI.ApplicationSettings;
 
 namespace eChess
 {
     public partial class MainWindow : Window
     {
-        readonly string currentVersion = "v1.8";
+        readonly string currentVersion = "v1.9";
         static readonly int abortTime = 225300;
         readonly string path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "\\eChess\\";
         readonly Field[,] board = new Field[8, 8];
@@ -48,14 +52,16 @@ namespace eChess
         string PGN = string.Empty;
         string playerName = string.Empty;
         Guid playerGuid = Guid.NewGuid();
+        SettingsPage settingsPage;
         GameEntity game = new GameEntity();
         BackgroundWorker backgroundMatchFinder = new BackgroundWorker();
         BackgroundWorker sendMove = new BackgroundWorker();
         BackgroundWorker receiveMove = new BackgroundWorker();
+        BackgroundWorker searchForActiveGame = new BackgroundWorker();
         MoveEntity opponentsMove = new MoveEntity();
         List<Button> allPieces = new List<Button>();
         Dictionary<Button, Piece> PiecesOfButtons = new Dictionary<Button, Piece>();
-        readonly MatchFinder matchFinder = new MatchFinder();
+        readonly MatchController matchFinder = new MatchController();
         readonly TimerModel timerModel = new TimerModel();
         System.Windows.Forms.Timer localTimer = new System.Windows.Forms.Timer();
         DateTime startDateTime;
@@ -64,13 +70,16 @@ namespace eChess
         public MainWindow()
         {
             InitializeComponent();
+            SettingsIO.Load();
             Directory.CreateDirectory(path);
             Timer.DataContext = timerModel;
-            SetupChessBoard();
-            SetUsername();
+            settingsPage = new SettingsPage(this);
+
             Update();
+            SetUsername();
             DeleteOldFilesAndShortcuts();
             CreateNewShortcuts();
+            SetupChessBoard();
             GameEndChecker.DoWork += CheckForGameEnd;
         }
 
@@ -153,6 +162,9 @@ namespace eChess
             else if (game.GameID != Guid.Empty)
             {
                 onlineGame = true;
+                Settings.Default.GameGuid = game.GameID;
+                Settings.Default.PlayerGuid = playerGuid;
+                SettingsIO.Save();
                 PrepareOnlineGame();
             }
             StartOnlineGame.IsEnabled = true;
@@ -161,7 +173,7 @@ namespace eChess
         private void PrepareOnlineGame()
         {
             StartOnlineGame.IsEnabled = true;
-            StartOnlineGame.Background = Brushes.DarkSlateBlue;
+            StartOnlineGame.ClearValue(Control.BackgroundProperty);
             StartOnlineGame.Content = "Online game";
             ProgressRing.Visibility = Visibility.Collapsed;
             Menu.Visibility = Visibility.Collapsed;
@@ -200,11 +212,7 @@ namespace eChess
 
         private void SetUsername()
         {
-            if (File.Exists(path + "username"))
-            {
-                string name = File.ReadAllText(path + "username");
-                NameTextBox.Text = name;
-            }
+            NameTextBox.Text = Settings.Default.Username;
         }
 
         private void SetupChessBoard()
@@ -311,14 +319,6 @@ namespace eChess
         private void FadeOutSb_Completed(object sender, EventArgs e)
         {
             SandClock.Visibility = Visibility.Collapsed;
-        }
-
-        private void PlaySound_DoWork(object sender, DoWorkEventArgs e)
-        {
-            if (board[newPos.X, newPos.Y].Piece != Piece.Empty)
-                PlaySound(Properties.Resources.Capture);
-            else
-                PlaySound(Properties.Resources.Move);
         }
 
         private void EnableOrDisableOwnPieces(bool enabled)
@@ -455,7 +455,7 @@ namespace eChess
         {
             if (await GameController.PostMove(game.GameID, playerGuid, currentPos, newPos) == false)
             {
-                MessageBox.Show("Move could not be posted.");
+                await Dispatcher.BeginInvoke(new Action(() => MessageBox.Show("Move could not be sent.")));
             }
         }
 
@@ -611,27 +611,31 @@ namespace eChess
         }
         private void PlaySound()
         {
-            BackgroundWorker playSound = new BackgroundWorker();
-            playSound.DoWork += PlaySound_DoWork;
-            playSound.RunWorkerAsync();
+            if (Settings.Default.Sounds == true)
+            {
+                if (board[newPos.X, newPos.Y].Piece != Piece.Empty)
+                    PlaySound(Properties.Resources.Capture);
+                else
+                    PlaySound(Properties.Resources.Move);
+            }
         }
 
         private void EnPassent()
         {
             foreach (var field in board)
             {
-                if (field.DoubleMoved == true)
+                if (field.DoubleMoved)
                 {
-                    if (doubleMoveForEnPassent == true)
+                    foreach (var f in board)
+                    {
+                        f.DoubleMoved = false;
+                    }
+                    if (doubleMoveForEnPassent)
                     {
                         doubleMoveForEnPassent = false;
                     }
                     else
                     {
-                        foreach (var f in board)
-                        {
-                            f.DoubleMoved = false;
-                        }
                         doubleMoveForEnPassent = true;
                     }
                 }
@@ -671,10 +675,10 @@ namespace eChess
             }
             markedFields.Clear();
 
-            (Grid.FindName("Hint" + currentPos.X + "_" + currentPos.Y) as System.Windows.Shapes.Rectangle).Fill = Brushes.MediumSpringGreen;
+            (Grid.FindName("Hint" + currentPos.X + "_" + currentPos.Y) as Rectangle).Fill = Brushes.Teal;
             markedFields.Add(currentPos);
 
-            (Grid.FindName("Hint" + newPos.X + "_" + newPos.Y) as System.Windows.Shapes.Rectangle).Fill = Brushes.SpringGreen;
+            (Grid.FindName("Hint" + newPos.X + "_" + newPos.Y) as Rectangle).Fill = Brushes.MediumSpringGreen;
             markedFields.Add(newPos);
         }
 
@@ -937,9 +941,16 @@ namespace eChess
 
                     if (lastSelectedPiece != null)
                     {
-                        if (currentlyInCheck == true && (lastSelectedPiece.Name == "BK" || lastSelectedPiece.Name == "WK"))
+                        if (currentlyInCheck == true)
                         {
-                            lastSelectedPiece.Background = Brushes.Red;
+                            if ((lastSelectedPiece.Name == "BK" && whitesTurn == false) || (lastSelectedPiece.Name == "WK" && whitesTurn == true))
+                            {
+                                lastSelectedPiece.Background = Brushes.Red;
+                            }
+                            else
+                            {
+                                lastSelectedPiece.Background = this.FindResource("DefaultBrush") as Brush;
+                            }
                         }
                         else
                         {
@@ -955,10 +966,16 @@ namespace eChess
             }
             else
             {
-                btn.Background = Brushes.Transparent;
+                if (currentlyInCheck == true && (lastSelectedPiece.Name == "BK" || lastSelectedPiece.Name == "WK"))
+                {
+                    btn.Background = Brushes.Red;
+                }
+                else
+                {
+                    btn.Background = Brushes.Transparent;
+                }
                 lastSelectedPiece = new Button();
                 ResetHints();
-
             }
         }
 
@@ -1036,8 +1053,8 @@ namespace eChess
                 if (CharactersAllowed(name))
                 {
                     playerName = name;
-                    Directory.CreateDirectory(path);
-                    File.WriteAllText(path + "username", name);
+                    Settings.Default.Username = playerName;
+                    SettingsIO.Save();
                 }
                 else
                 {
@@ -1109,7 +1126,7 @@ namespace eChess
             //Cancel search
             backgroundMatchFinder.CancelAsync();
             onlineGame = false;
-            StartOnlineGame.Background = Brushes.DarkSlateBlue;
+            StartOnlineGame.ClearValue(Control.BackgroundProperty);
             StartOnlineGame.Content = "Online game";
             ProgressRing.Visibility = Visibility.Collapsed;
             StartOnlineGame.IsEnabled = false;
@@ -1151,7 +1168,7 @@ namespace eChess
             foreach (string directory in directories)
             {
                 string name = directory.Replace(path, "");
-                if (name.StartsWith("v") && name.Contains(".") && name != currentVersion)
+                if (name.StartsWith("v") && name.Contains(".") && Convert.ToDouble(name.Replace("v", "")) < Convert.ToDouble(currentVersion.Replace("v", "")))
                 {
                     try
                     {
@@ -1270,6 +1287,13 @@ namespace eChess
                 }
                 Clipboard.SetText(PGN);
             }));
+        }
+
+        private void SettingsBtn_Click(object sender, RoutedEventArgs e)
+        {
+            SettingsFrame.Navigate(settingsPage);
+            SettingsFrame.Visibility = Visibility.Visible;
+            Menu.Visibility = Visibility.Collapsed;
         }
     }
 }

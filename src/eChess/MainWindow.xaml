@@ -7,8 +7,9 @@
         xmlns:local="clr-namespace:eChess"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         xmlns:gif="https://github.com/XamlAnimatedGif/XamlAnimatedGif"
+        xmlns:p="clr-namespace:eChess.Properties"
         mc:Ignorable="d"
-        x:Uid="MainWindow" Title="eChess" WindowState="Maximized" Height="720" Width="1200" MinWidth="698" MinHeight="720"  Background="DarkSlateGray" WindowStartupLocation="CenterScreen">
+        x:Uid="MainWindow" Title="eChess" WindowState="Maximized" Height="720" Width="1200" MinWidth="698" MinHeight="720" WindowStartupLocation="CenterScreen">
     <Window.Resources>
         <SolidColorBrush x:Key="SelectedBrush" Color="#FF00BFFF" Opacity="0.4"/>
         <SolidColorBrush x:Key="DefaultBrush" Color="Transparent"/>
@@ -112,30 +113,23 @@
             </Setter>
         </Style>
         <Style x:Key="WhiteColor" TargetType="Rectangle">
-            <Setter Property="Fill" Value="Azure"/>
+            <Setter Property="Fill" Value="{Binding Source={x:Static p:Settings.Default}, Path=WhiteColor}"/>
         </Style>
         <Style x:Key="BlackColor" TargetType="Rectangle">
-            <Setter Property="Fill" Value="SlateBlue"/>
+            <Setter Property="Fill" Value="{Binding Source={x:Static p:Settings.Default}, Path=BlackColor}"/>
         </Style>
     </Window.Resources>
-    <Grid x:Name="ParentGrid">
+    <Grid x:Name="ParentGrid" Background="#FF1F1F1F">
         <Grid.Resources>
             <ResourceDictionary>
                 <ResourceDictionary.MergedDictionaries>
                     <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Dark.xaml" />
                     <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesignTheme.Defaults.xaml" />
-                    <ResourceDictionary Source="pack://application:,,,/MaterialDesignColors;component/Themes/Recommended/Primary/MaterialDesignColor.LightBlue.xaml" />
-                    <ResourceDictionary Source="pack://application:,,,/MaterialDesignColors;component/Themes/Recommended/Accent/MaterialDesignColor.LightBlue.xaml" />
+                    <ResourceDictionary Source="pack://application:,,,/MaterialDesignColors;component/Themes/Recommended/Primary/MaterialDesignColor.DeepPurple.xaml" />
+                    <ResourceDictionary Source="pack://application:,,,/MaterialDesignColors;component/Themes/Recommended/Accent/MaterialDesignColor.Indigo.xaml" />
                 </ResourceDictionary.MergedDictionaries>
             </ResourceDictionary>
         </Grid.Resources>
-        <Grid.Background>
-            <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
-                <GradientStop Color="LightSeaGreen"/>
-                <GradientStop Color="#FF1D5C59" Offset="1"/>
-                <GradientStop Color="#FF2DA9A3"/>
-            </LinearGradientBrush>
-        </Grid.Background>
         <Grid Panel.ZIndex="5" x:Name="EndScreenGrid"  Width="0" Grid.ColumnSpan="8" Grid.RowSpan="8" Visibility="Collapsed">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
@@ -163,19 +157,12 @@
             <TextBlock x:Name="WinnerText" Foreground="DarkSlateBlue" Grid.RowSpan="1" Grid.ColumnSpan="8" Grid.Row="3" FontSize="70" FontStyle="Italic" FontWeight="Normal" TextAlignment="Center"/>
             <TextBlock x:Name="ReasonText" Foreground="Black" Grid.ColumnSpan="8" VerticalAlignment="Top" Margin="0,10,0,0" Grid.RowSpan="1" Grid.Row="4" FontSize="25" FontStyle="Normal" FontWeight="Light" TextAlignment="Center"/>
             <Rectangle Height="2" Fill="DarkSlateBlue" Grid.Column="2" Grid.ColumnSpan="4" Grid.Row="4" VerticalAlignment="Center" Margin="0,30,0,0"/>
-            <Button x:Name="ExitBtn" materialDesign:ButtonAssist.CornerRadius="15" Grid.Column="0" Grid.Row="5" Style="{StaticResource MaterialDesignFlatAccentBgButton}" Content="Exit" Height="auto" BorderThickness="0" FontSize="24" FontWeight="Bold" Grid.ColumnSpan="1" Width="auto" Margin="10,10" Background="DarkSlateBlue" Click="ExitBtn_Click"/>
-            <Button x:Name="NewGameBtn" materialDesign:ButtonAssist.CornerRadius="15" Grid.Column="7" Grid.Row="5" Style="{StaticResource MaterialDesignFlatAccentBgButton}" Content="New game" Height="auto" BorderThickness="0" FontSize="17"  FontWeight="Bold" Grid.ColumnSpan="2" HorizontalAlignment="Center"  Margin="0,10" Background="DarkSlateBlue" Click="NewGameBtn_Click"/>
+            <Button x:Name="ExitBtn" materialDesign:ButtonAssist.CornerRadius="10" Grid.Column="0" Grid.Row="5" Style="{StaticResource MaterialDesignFlatAccentBgButton}" Content="Exit App" Height="auto" BorderThickness="0" FontSize="20" FontWeight="Bold" Grid.ColumnSpan="1" Width="auto" Margin="10,10" Background="DarkSlateBlue" Click="ExitBtn_Click"/>
+            <Button x:Name="NewGameBtn" materialDesign:ButtonAssist.CornerRadius="10" Grid.Column="7" Grid.Row="5" Style="{StaticResource MaterialDesignFlatAccentBgButton}" Content="New game" Height="auto" BorderThickness="0" FontSize="20"  FontWeight="Bold" Grid.ColumnSpan="2" HorizontalAlignment="Center"  Margin="0,10" Background="DarkSlateBlue" Click="NewGameBtn_Click"/>
             <CheckBox Grid.Column="3" Grid.Row="5" Grid.ColumnSpan="2" VerticalAlignment="Center" Margin="0,0,0,10" x:Name="CopyGameBtn" Height="60" Width="60" Background="DarkSlateBlue" Foreground="White" BorderBrush="White" Content="📋" FontSize="26" Style="{StaticResource MaterialDesignActionDarkCheckBox}" Click="CopyGameBtn_Click"/>
         </Grid>
-
+        <Frame Grid.RowSpan="9" Grid.ColumnSpan="11" x:Name="SettingsFrame" Visibility="Collapsed"/>
         <Grid x:Name="Menu" Panel.ZIndex="1" Grid.ColumnSpan="11" Grid.RowSpan="9" Visibility="Visible">
-            <Grid.Background>
-                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
-                    <GradientStop Color="LightSeaGreen"/>
-                    <GradientStop Color="#FF1D5C59" Offset="1"/>
-                    <GradientStop Color="#FF2DA9A3"/>
-                </LinearGradientBrush>
-            </Grid.Background>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
@@ -199,29 +186,24 @@
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <Frame x:Name="UpdatePage" Panel.ZIndex="1" Grid.ColumnSpan="11" Grid.RowSpan="9" Visibility="Collapsed"/>
             <TextBlock Text="eChess" FontSize="90" Grid.Column="3" TextAlignment="Center" Grid.RowSpan="2" Grid.ColumnSpan="5" Foreground="White" FontStyle="Italic" FontWeight="Bold" VerticalAlignment="Center"/>
-            <Button x:Name="StartLocalGame"  Grid.Column="4" Grid.Row="3" Grid.ColumnSpan="3" Style="{StaticResource MaterialDesignRaisedDarkButton}"  materialDesign:ButtonAssist.CornerRadius="15" Height="auto" BorderThickness="0" Content="Local game" FontSize="30" Foreground="White" FontWeight="Bold" Click="StartLocalGame_Click">
-                <Button.Background>
-                    <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
-                        <GradientStop Color="#FF705CEC" Offset="0"/>
-                        <GradientStop Color="#FF483A9C" Offset="1"/>
-                        <GradientStop Color="#FF5949C3" Offset="0"/>
-                    </LinearGradientBrush>
-                </Button.Background>
-            </Button>
-            <Button x:Name="StartOnlineGame" Grid.Column="4" Grid.Row="5" Grid.ColumnSpan="3" Style="{StaticResource MaterialDesignRaisedDarkButton}"  materialDesign:ButtonAssist.CornerRadius="15" Height="auto" BorderThickness="0" Content="Online game" FontSize="30" Foreground="White" FontWeight="Bold" Click="StartOnlineGame_Click">
-                <Button.Background>
-                    <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
-                        <GradientStop Color="#FF705CEC" Offset="0"/>
-                        <GradientStop Color="#FF483A9C" Offset="1"/>
-                        <GradientStop Color="#FF5949C3" Offset="0"/>
-                    </LinearGradientBrush>
-                </Button.Background>
-            </Button>
-            <ProgressBar x:Name="ProgressRing" Style="{StaticResource MaterialDesignCircularProgressBar}" Grid.Row="6" Grid.Column="5" Height="auto" Width="auto" VerticalAlignment="Center" IsIndeterminate="True" Foreground="AliceBlue" Visibility="Collapsed"/>
-            <TextBox x:Name="NameTextBox" Grid.ColumnSpan="3" materialDesign:HintAssist.Hint="Username" Background="Transparent" Style="{StaticResource MaterialDesignFloatingHintTextBox}" Grid.Row="7" Grid.RowSpan="2" VerticalAlignment="Center" HorizontalAlignment="Center" Grid.Column="8" Foreground="White" Text="Anonymous" BorderThickness="0" FontSize="35" TextAlignment="Left" TextChanged="NameTextBox_TextChanged"/>
+            <Viewbox Grid.Row="4" Grid.RowSpan="1" Grid.Column="4" Grid.ColumnSpan="3" Stretch="Uniform" MaxWidth="300" MaxHeight="90">
+                <Button x:Name="StartLocalGame" BorderThickness="0" Content="Local game" FontWeight="Bold" Click="StartLocalGame_Click"/>
+            </Viewbox>
+            <Viewbox Grid.Row="7" Grid.RowSpan="1" Grid.Column="4" Grid.ColumnSpan="3" Stretch="Uniform" MaxWidth="300" MaxHeight="90">
+                <Button x:Name="StartOnlineGame" BorderThickness="0" Content="Online game" FontWeight="Bold" Click="StartOnlineGame_Click"/>
+            </Viewbox>
+            <Viewbox Grid.Column="10" Margin="0 10 10 0">
+                <Button x:Name="SettingsBtn" Background="Transparent" BorderThickness="0" Click="SettingsBtn_Click">
+                    <materialDesign:PackIcon Kind="Cog" Width="auto" Height="auto"/>
+                </Button>
+            </Viewbox>
+            <ProgressBar x:Name="ProgressRing" Style="{StaticResource MaterialDesignCircularProgressBar}" Grid.Row="8" Grid.Column="5" Height="auto" Width="auto" VerticalAlignment="Center" IsIndeterminate="True" Foreground="AliceBlue" Visibility="Collapsed"/>
+            <TextBox x:Name="NameTextBox" Grid.ColumnSpan="2" materialDesign:HintAssist.Hint="Username" Background="Transparent" Style="{StaticResource MaterialDesignFloatingHintTextBox}" Grid.Row="9" Grid.RowSpan="2" VerticalAlignment="Center" HorizontalAlignment="Stretch" Grid.Column="9" Margin="0 0 10 0" Foreground="White" Text="Anonymous" BorderThickness="0" FontSize="35" TextAlignment="Left" TextChanged="NameTextBox_TextChanged"/>
         </Grid>
         <Grid Panel.ZIndex="1" Visibility="Visible">
             <Grid.ColumnDefinitions>
@@ -295,7 +277,7 @@
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <Grid x:Name="Board" Grid.ColumnSpan="8" Grid.RowSpan="8">
+            <Grid x:Name="Board" Grid.ColumnSpan="8" Grid.RowSpan="8" >
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/>
