@@ -58,8 +58,8 @@ Download the installer (recommended) or download a release
 - [x] Username limitations to ensure proper displaying
 - [x] Delete old versions automatically
 - [x] Add sand clock gif when waiting for the opponent 
+- [x] Settings page
+- [x] Customize sound effects
+- [x] Customize colors
 - [ ] Forfeit button for mulitplayer games and leave button for local games
 - [ ] Option to hide endscreen to see the game after it ended
-- [ ] Settings page
-- [ ] Customize sound effects
-- [ ] Customize colors
