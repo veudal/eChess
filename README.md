@@ -24,11 +24,11 @@ Download the installer (recommended) or download a release
 
 <hr>
 
-![image](https://user-images.githubusercontent.com/62218506/160291316-30ae7052-90a9-43e6-b6fd-4a20ee572b77.png)
+![Screenshot 2022-09-19 170925](https://user-images.githubusercontent.com/62218506/191062078-27eb42e2-f859-485f-b57e-775d32c0ff67.png)
 
-![Screenshot 2022-03-27 182811](https://user-images.githubusercontent.com/62218506/160291327-23f28656-98ac-4fe0-9d5e-2514279b7621.png)
+![Screenshot 2022-09-19 171127](https://user-images.githubusercontent.com/62218506/191062090-ed0ad80f-fa95-4639-892b-d2c25757befc.png)
 
-![image](https://user-images.githubusercontent.com/62218506/160291513-d315f41b-f4a8-4951-8cfb-97b47bb60413.png)
+![Screenshot 2022-09-19 171313](https://user-images.githubusercontent.com/62218506/191062100-27f7867e-c0a7-4c8b-9c93-72a1d2f429df.png)
 
 # Features
 
